@@ -215,12 +215,12 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 
 	seg.setMethodType(pcl::SAC_RANSAC);
 	seg.setMaxIterations(1000);
-	seg.setDistanceThreshold(0.01);
+	seg.setDistanceThreshold(10);
 
 	pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
 
 	int i=0,nr_points=(int) cloudSource->points.size();
-	while(cloudSource->points.size()>0.3*nr_points)
+	while(cloudSource->points.size()>0.7*nr_points)
 	{
 		seg.setInputCloud(cloudSource);
 		seg.segment(*inliers,*coefficients);
@@ -242,6 +242,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 		i++;
 	}
 	return cloud_p;
+	//return cloud_f;
 
 }
 //pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)

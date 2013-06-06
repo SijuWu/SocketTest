@@ -132,7 +132,9 @@ void KinectOpenNI::KinectRun()
 		{
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
 			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
-			cloudViewer.showCloud(cloudDownSample);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
+			//cloudViewer.showCloud(cloudDownSample);
+			cloudViewer.showCloud(planeCloud);
 		}
 		
 		
