@@ -14,12 +14,6 @@ PointCloud::PointCloud(void)
 	cloudXYZRGBA->width=640;
 	cloudXYZRGBA->height=480;
 	cloudXYZRGBA->resize(640*480);
-
-	angularResolution = (float) (  1.0f * (M_PI/180.0f));  //   1.0 degree in radians
-	maxAngleWidth     = (float) (57.0f * (M_PI/180.0f));  // 360.0 degree in radians
-	maxAngleHeight    = (float) (43.0f * (M_PI/180.0f));  // 180.0 degree in radians
-
-
 }
 
 
@@ -207,30 +201,82 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::passThroughFilter(pcl::Point
 	return cloudXYZRGBA_filtered;
 }
 
-pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
 {
-	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
-	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-	float noiseLevel=0.00;
-	float minRange = 0.0f;
-	int borderSize = 1;
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_p (new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
 
-	pcl::RangeImage rangeImage;
-	rangeImage.createFromPointCloud(cloudXYZ, angularResolution, maxAngleWidth, maxAngleHeight,sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
+	pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+	seg.setOptimizeCoefficients(true);
 
-	return rangeImage;
+	seg.setModelType(pcl::SACMODEL_PLANE);
+
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setMaxIterations(1000);
+	seg.setDistanceThreshold(0.01);
+
+	pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
+
+	int i=0,nr_points=(int) cloudSource->points.size();
+	while(cloudSource->points.size()>0.3*nr_points)
+	{
+		seg.setInputCloud(cloudSource);
+		seg.segment(*inliers,*coefficients);
+		if(inliers->indices.size()==0)
+		{
+			std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;
+			break;
+		}
+
+		extract.setInputCloud(cloudSource);
+		extract.setIndices(inliers);
+		extract.setNegative(false);
+		extract.filter(*cloud_p);
+		
+		extract.setNegative(true);
+		extract.filter(*cloud_f);
+		cloudSource.swap(cloud_f);
+
+		i++;
+	}
+	return cloud_p;
+
 }
+//pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)
+//{
+//	float angularResolution = (float) (  1.0f * (M_PI/180.0f));  //   1.0 degree in radians
+//	float maxAngleWidth     = (float) (57.0f * (M_PI/180.0f));  // 360.0 degree in radians
+//	float maxAngleHeight    = (float) (43.0f * (M_PI/180.0f));  // 180.0 degree in radians
+//
+//	pcl::PointCloud<pcl::PointXYZ>& point_cloud = *cloudXYZ;
+//	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
+//	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
+//	float noiseLevel=0.00;
+//	float minRange = 0.0f;
+//	int borderSize = 1;
+//
+//	boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
+//	pcl::RangeImage& range_image = *range_image_ptr;   
+//
+//	
+//	range_image.createFromPointCloud(point_cloud, angularResolution, maxAngleWidth, maxAngleHeight,sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
+//
+//	return range_image;
+//}
 
-pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA)
-{
-	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
-	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-	float noiseLevel=0.00;
-	float minRange = 0.0f;
-	int borderSize = 1;
-
-	pcl::RangeImage rangeImage;
-	rangeImage.createFromPointCloud(cloudXYZRGBA, angularResolution, maxAngleWidth, maxAngleHeight, sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
-
-	return rangeImage;
-}
+//pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA)
+//{
+//	pcl::PointCloud<pcl::PointXYZRGBA>& point_cloud = *cloudXYZRGBA;
+//	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
+//	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
+//	float noiseLevel=0.00;
+//	float minRange = 0.0f;
+//	int borderSize = 1;
+//
+//	pcl::RangeImage rangeImage;
+//	rangeImage.createFromPointCloud(point_cloud, angularResolution, maxAngleWidth, maxAngleHeight, sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
+//
+//	return rangeImage;
+//}
