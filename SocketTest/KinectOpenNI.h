@@ -8,7 +8,7 @@
 #include "opencv/highgui.h" 
 #include "PointCloud.h"
 #include <pcl/visualization/cloud_viewer.h>
-#include <pcl/visualization/pcl_visualizer.h>
+
 class KinectOpenNI
 {
 public:
@@ -38,6 +38,11 @@ private:
 	PointCloud pointCloud;
 	cv::Mat depthImage;
 	cv::Mat colorImage;
-	 
+	char key;
+    int mode;
+
+	pcl::PointXYZ head;
+	pcl::PointXYZ leftHand;
+	pcl::PointXYZ rightHand;
 };
 

@@ -155,10 +155,22 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudXYZ()
 {
 	return cloudXYZ;
 }
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudXYZRGBA()
 {
 	return cloudXYZRGBA;
 }
+
+
+//template<typename PointT> pcl::PointCloud<PointT>::Ptr PointCloud::downSampling(pcl::PointCloud<PointT>::Ptr cloudSource,float xLeafSize,float yLeafSize, float zLeafSize)
+//{
+//	pcl::VoxelGrid<PointT> filtering;
+//	filtering.setInputCloud(cloudSource);
+//	filtering.setLeafSize(xLeafSize,yLeafSize,zLeafSize);
+//	pcl::PointCloud<PointT>::Ptr cloudXYZ_filtered (new pcl::PointCloud<PointT>);
+//	filtering.filter(*cloud_filtered);
+//	return cloud_filtered;
+//}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::downSampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ,float xLeafSize,float yLeafSize, float zLeafSize)
 {
@@ -201,6 +213,49 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::passThroughFilter(pcl::Point
 	return cloudXYZRGBA_filtered;
 }
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_p (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+
+	pcl::SACSegmentation<pcl::PointXYZ> seg;
+	seg.setOptimizeCoefficients(true);
+
+	seg.setModelType(pcl::SACMODEL_PLANE);
+
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setMaxIterations(1000);
+	seg.setDistanceThreshold(10);
+
+	pcl::ExtractIndices<pcl::PointXYZ> extract;
+
+	int i=0,nr_points=(int) cloudSource->points.size();
+	while(cloudSource->points.size()>0.7*nr_points)
+	{
+		seg.setInputCloud(cloudSource);
+		seg.segment(*inliers,*coefficients);
+		if(inliers->indices.size()==0)
+		{
+			std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;
+			break;
+		}
+
+		extract.setInputCloud(cloudSource);
+		extract.setIndices(inliers);
+		extract.setNegative(false);
+		extract.filter(*cloud_p);
+		
+		extract.setNegative(true);
+		extract.filter(*cloud_f);
+		cloudSource.swap(cloud_f);
+
+		i++;
+	}
+	return cloud_p;
+}
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
 {
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_p (new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -237,12 +292,46 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 		
 		extract.setNegative(true);
 		extract.filter(*cloud_f);
-		cloudSource.swap(cloud_f);
-
+		//cloudSource.swap(cloud_f);
+		*cloudSource=*cloud_f;
 		i++;
 	}
 	return cloud_p;
-	//return cloud_f;
+}
+
+void PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
+{
+
+}
+std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
+{
+	getCloudPlane(cloudSource);
+	 pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
+	tree->setInputCloud(cloudSource);
+
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
+	ec.setClusterTolerance(30);
+	ec.setMinClusterSize(500);
+	ec.setMaxClusterSize(25000);
+	ec.setSearchMethod(tree);
+	ec.setInputCloud(cloudSource);
+	ec.extract(cluster_indices);
+	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>cloud_clusters;
+	int j=0;
+	for(std::vector<pcl::PointIndices>::const_iterator it=cluster_indices.begin();it!=cluster_indices.end();++it)
+	{
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		for(std::vector<int>::const_iterator pit=it->indices.begin();pit!=it->indices.end();pit++)
+			cloud_cluster->points.push_back(cloudSource->points[*pit]);
+		cloud_cluster->width=cloud_cluster->points.size();
+		cloud_cluster->height=1;
+		cloud_cluster->is_dense=true;
+		cloud_clusters.push_back(cloud_cluster);
+		j++;
+	}
+	
+	return cloud_clusters;
 
 }
 //pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)

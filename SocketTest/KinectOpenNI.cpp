@@ -117,7 +117,11 @@ void KinectOpenNI::KinectRun()
     result = context.StartGeneratingAll();   
 
 	pcl::visualization::CloudViewer cloudViewer("Simple Cloud Viewer");
-	while(true)
+
+	key=0;
+	mode=1;
+
+	while(key!=27)
 	{
 		context.WaitAnyUpdateAll();
 
@@ -129,15 +133,81 @@ void KinectOpenNI::KinectRun()
 		bool getUser=checkUser(&skeletonCap);
 		displayImage();
 		if(getUser==true)
-		{
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
-			//cloudViewer.showCloud(cloudDownSample);
-			cloudViewer.showCloud(planeCloud);
+		{	
+			
 		}
-		
-		
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
+		cloudViewer.showCloud(cloudDownSample);
+		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
+		/*std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters=pointCloud.euclideanClusterExtract(cloudDownSample);
+		switch(key)
+		{
+		case '0':
+		mode=0;
+		break;
+		case '1':
+		mode=1;
+		break;
+		case '2':
+		mode=2;
+		break;
+		case '3':
+		mode=3;
+		break;
+		case '4':
+		mode=4;
+		break;
+		case '5':
+		mode=5;
+		break;
+		case '6':
+		mode=6;
+		break;
+		default:
+		break;
+		}
+		switch(mode)
+		{
+		case 0:
+		cloudViewer.showCloud(cloudDownSample);
+		break;
+		case 1:
+		if(clusters.size()>=1)
+		cloudViewer.showCloud(clusters[0]);
+		break;
+		case 2:
+		if(clusters.size()>=2)
+		cloudViewer.showCloud(clusters[1]);
+		break;
+		case 3:
+		if(clusters.size()>=3)
+		cloudViewer.showCloud(clusters[2]);
+		break;
+		case 4:	
+		if(clusters.size()>=4)
+		cloudViewer.showCloud(clusters[3]);
+		break;
+		case 5:
+		if(clusters.size()>=5)
+		cloudViewer.showCloud(clusters[4]);
+		break;
+		case 6:
+		if(clusters.size()>=6)
+		cloudViewer.showCloud(clusters[5]);
+		break;
+		default:
+		break;
+		}*/
+
+
+
+
+
+
+
+
+
 	}
 }
 
@@ -169,7 +239,7 @@ void KinectOpenNI::displayImage()
 {
 	cv::imshow("depth",depthImage);
 	cv::imshow("image",colorImage);
-	cv::waitKey(20);
+	key=cv::waitKey(20);
 }
 bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 {
@@ -193,6 +263,11 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 				depthGenerator.ConvertRealWorldToProjective(24,skelPointsIn,skelPointsOut);
 				detected=true;
 
+				float F = 0.0019047619f;
+				
+				head.x=(skelPointsOut[0].X-320)*skelPointsOut[0].Z*F;;
+				head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;;
+				head.z=skelPointsOut[0].Z;
 
 				for(int d=0;d<14;d++)  
 				{  
@@ -207,16 +282,18 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 		}
 	}
 	
-	/*if(detected==true)
-	{*/
-		const XnDepthPixel* pDepth=depthMD.Data();
-		const XnUInt8* pColor=imageMD.Data();
-		//pointCloud.createCloudXYZ(pDepth);
-		pointCloud.createCloudXYZRGBA(pDepth,pColor);
+	const XnDepthPixel* pDepth=depthMD.Data();
+	const XnUInt8* pColor=imageMD.Data();
+	//pointCloud.createCloudXYZ(pDepth);
+	pointCloud.createCloudXYZRGBA(pDepth,pColor);
+
+	if(detected==true)
+	{
+		
 		return true;
-	/*}*/
-	/*else
+	}
+	else
 	{
 	return false;
-	}*/
+	}
 }
