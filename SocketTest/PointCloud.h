@@ -51,6 +51,12 @@ public:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZRGBA* searchPoint);
 
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,int neighbourNum, pcl::PointXYZ* searchPoint);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,int neighbourNum, pcl::PointXYZRGBA* searchPoint);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float radius, pcl::PointXYZ* searchPoint);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float radius, pcl::PointXYZRGBA* searchPoint);
 private:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ;
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA;

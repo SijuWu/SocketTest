@@ -30,14 +30,14 @@ void PointCloud::createCloudXYZ( const XnDepthPixel* pDepth)
 	//Get the pointer of the x coordinate of the first point
 	float* pointPtr=&(*points)[0].x;
 	//Get the pointer of the depthImage
-	
-  
+
+
 	//The focal length of the RGB camera
 	float F = 0.0019047619f;
 
 	for( unsigned int i =0; i < 640*480; ++i)  
 	{
-       //Get the depth of the pixel
+		//Get the depth of the pixel
 		float zValue=*pDepth;
 
 		//Get the 2D position of each pixel
@@ -88,7 +88,7 @@ void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* p
 
 	for( unsigned int i =0; i < 640*480; ++i)  
 	{
-       //Get the depth of the pixel
+		//Get the depth of the pixel
 		float zValue=*pDepth;
 
 		//Get the 2D position of each pixel
@@ -196,7 +196,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::passThroughFilter(pcl::PointClou
 {
 	pcl::PassThrough<pcl::PointXYZ> pass;
 	pass.setInputCloud(cloudXYZ);
-	 pass.setFilterFieldName (axis);
+	pass.setFilterFieldName (axis);
 	pass.setFilterLimits(minLimit,maxLimit);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ_filtered (new pcl::PointCloud<pcl::PointXYZ>);
 	pass.filter(*cloudXYZ_filtered);
@@ -206,7 +206,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::passThroughFilter(pcl::Point
 {
 	pcl::PassThrough<pcl::PointXYZRGBA> pass;
 	pass.setInputCloud(cloudXYZRGBA);
-	 pass.setFilterFieldName (axis);
+	pass.setFilterFieldName (axis);
 	pass.setFilterLimits(minLimit,maxLimit);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA_filtered (new pcl::PointCloud<pcl::PointXYZRGBA>);
 	pass.filter(*cloudXYZRGBA_filtered);
@@ -246,7 +246,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudPlane(pcl::PointCloud<pc
 		extract.setIndices(inliers);
 		extract.setNegative(false);
 		extract.filter(*cloud_p);
-		
+
 		extract.setNegative(true);
 		extract.filter(*cloud_f);
 		cloudSource.swap(cloud_f);
@@ -289,7 +289,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 		extract.setIndices(inliers);
 		extract.setNegative(false);
 		extract.filter(*cloud_p);
-		
+
 		extract.setNegative(true);
 		extract.filter(*cloud_f);
 		//cloudSource.swap(cloud_f);
@@ -302,7 +302,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
 {
 	getCloudPlane(cloudSource);
-	 pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
 	tree->setInputCloud(cloudSource);
 
 	std::vector<pcl::PointIndices> cluster_indices;
@@ -326,14 +326,14 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExt
 		cloud_clusters.push_back(cloud_cluster);
 		j++;
 	}
-	
+
 	return cloud_clusters;
 }
 
 std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
 {
 	getCloudPlane(cloudSource);
-	 pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
+	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
 	tree->setInputCloud(cloudSource);
 
 	std::vector<pcl::PointIndices> cluster_indices;
@@ -357,7 +357,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanCluste
 		cloud_clusters.push_back(cloud_cluster);
 		j++;
 	}
-	
+
 	return cloud_clusters;
 }
 
@@ -373,14 +373,14 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
 	if (octree.voxelSearch (*searchPoint, pointIdxVec))
-  {
-	  cloud_neighbours->width=pointIdxVec.size();
-	  cloud_neighbours->height=1;
-	  cloud_neighbours->resize(pointIdxVec.size());
-              
-    for (size_t i = 0; i < pointIdxVec.size (); ++i)
-		cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
-  }
+	{
+		cloud_neighbours->width=pointIdxVec.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxVec.size());
+
+		for (size_t i = 0; i < pointIdxVec.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+	}
 
 	return cloud_neighbours;
 }
@@ -417,18 +417,18 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
-	 std::vector<int> pointIdxNKNSearch;
-  std::vector<float> pointNKNSquaredDistance;
+	std::vector<int> pointIdxNKNSearch;
+	std::vector<float> pointNKNSquaredDistance;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
-    if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
-  {
-	  cloud_neighbours->width=pointIdxNKNSearch.size();
-	  cloud_neighbours->height=1;
-	  cloud_neighbours->resize(pointIdxNKNSearch.size());
-	  for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-		  cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+	{
+		cloud_neighbours->width=pointIdxNKNSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxNKNSearch.size());
+		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
 	}
 	return cloud_neighbours;
 }
@@ -439,22 +439,22 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
-	 std::vector<int> pointIdxNKNSearch;
-  std::vector<float> pointNKNSquaredDistance;
+	std::vector<int> pointIdxNKNSearch;
+	std::vector<float> pointNKNSquaredDistance;
 
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-      if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
-  {
-	  cloud_neighbours->width=pointIdxNKNSearch.size();
-	  cloud_neighbours->height=1;
-	  cloud_neighbours->resize(pointIdxNKNSearch.size());
-	  for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-		  cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+	{
+		cloud_neighbours->width=pointIdxNKNSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxNKNSearch.size());
+		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
 	}
 	return cloud_neighbours;
 }
-	pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
 {
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
 
@@ -462,21 +462,21 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 	octree.addPointsFromInputCloud ();
 
 	std::vector<int> pointIdxRadiusSearch;
-  std::vector<float> pointRadiusSquaredDistance;
+	std::vector<float> pointRadiusSquaredDistance;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
-   if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-  {
-	  cloud_neighbours->width=pointIdxRadiusSearch.size();
-	  cloud_neighbours->height=1;
-	  cloud_neighbours->resize(pointIdxRadiusSearch.size());
+	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+	{
+		cloud_neighbours->width=pointIdxRadiusSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxRadiusSearch.size());
 
-    for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-		cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
-  }
+		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+	}
 
-   return cloud_neighbours;
+	return cloud_neighbours;
 }
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZRGBA* searchPoint)
 {
@@ -485,20 +485,104 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
-	 std::vector<int> pointIdxRadiusSearch;
-  std::vector<float> pointRadiusSquaredDistance;
+	std::vector<int> pointIdxRadiusSearch;
+	std::vector<float> pointRadiusSquaredDistance;
 
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-   if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-  {
-	  cloud_neighbours->width=pointIdxRadiusSearch.size();
-	  cloud_neighbours->height=1;
-	  cloud_neighbours->resize(pointIdxRadiusSearch.size());
+	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+	{
+		cloud_neighbours->width=pointIdxRadiusSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxRadiusSearch.size());
 
-    for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-		cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
-  }
+		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+	}
 
-   return cloud_neighbours;
+	return cloud_neighbours;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,int neighbourNum, pcl::PointXYZ* searchPoint)
+{
+	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+	kdtree.setInputCloud(cloudSource);
+
+	std::vector<int> pointIdxNKNSearch(neighbourNum);
+	std::vector<float> pointNKNSquaredDistance(neighbourNum);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
+	{
+		cloud_neighbours->width= pointIdxNKNSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxNKNSearch.size());
+
+		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	}
+	return cloud_neighbours;
+}
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,int neighbourNum, pcl::PointXYZRGBA* searchPoint)
+{
+	pcl::KdTreeFLANN<pcl::PointXYZRGBA> kdtree;
+	kdtree.setInputCloud(cloudSource);
+
+	std::vector<int> pointIdxNKNSearch(neighbourNum);
+	std::vector<float> pointNKNSquaredDistance(neighbourNum);
+
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
+	{
+		cloud_neighbours->width= pointIdxNKNSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxNKNSearch.size());
+
+		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	}
+	return cloud_neighbours;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float radius, pcl::PointXYZ* searchPoint)
+{
+	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+	kdtree.setInputCloud(cloudSource);
+
+	std::vector<int> pointIdxRadiusSearch;
+	std::vector<float> pointRadiusSquaredDistance;
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
+	{
+		cloud_neighbours->width= pointIdxRadiusSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxRadiusSearch.size());
+
+		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+
+	}
+	return cloud_neighbours;
+}
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float radius, pcl::PointXYZRGBA* searchPoint)
+{
+	pcl::KdTreeFLANN<pcl::PointXYZRGBA> kdtree;
+	kdtree.setInputCloud(cloudSource);
+
+	std::vector<int> pointIdxRadiusSearch;
+	std::vector<float> pointRadiusSquaredDistance;
+
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
+	{
+		cloud_neighbours->width= pointIdxRadiusSearch.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxRadiusSearch.size());
+
+		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+
+	}
+	return cloud_neighbours;
 }
