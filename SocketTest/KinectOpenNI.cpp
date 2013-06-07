@@ -139,7 +139,8 @@ void KinectOpenNI::KinectRun()
 		
 		if(getUser==true)
 		{	
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourOctree(cloudDownSample,200.0f,&head);
+			/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourOctreeVoxel(cloudDownSample,30.0f,&head);*/
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourOctreeRadius(cloudDownSample,30.0f,100.0f,&head);
 			cloudViewer.showCloud(potentialHead);
 		}
 		else

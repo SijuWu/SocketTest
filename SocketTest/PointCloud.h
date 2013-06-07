@@ -42,8 +42,14 @@ public:
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource);
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource);
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution, pcl::PointXYZ* searchPoint);
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution, pcl::PointXYZRGBA* searchPoint);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution, pcl::PointXYZ* searchPoint);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution, pcl::PointXYZRGBA* searchPoint);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZ* searchPoint);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZRGBA* searchPoint);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint);
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZRGBA* searchPoint);
 
 private:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ;

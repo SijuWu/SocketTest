@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "PointCloud.h"
 
 
@@ -361,90 +361,144 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanCluste
 	return cloud_clusters;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,pcl::PointXYZ* searchPoint)
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution, pcl::PointXYZ* searchPoint)
 {
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	std::vector<int> pointIdxVec;
+
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree(resolution);
 
-	octree.setInputCloud(cloudSource);
-	octree.addPointsFromInputCloud();
-
-	std::vector<int> pointIdxVec;
-
-	
-	if(octree.voxelSearch(*searchPoint,pointIdxVec))
-	{
-		cloud_neighbours->width=pointIdxVec.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxVec.size());
-
-		for(size_t i=0;i<pointIdxVec.size();++i)
-		{
-			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
-		}
-	}
+	if (octree.voxelSearch (*searchPoint, pointIdxVec))
+  {
+	  cloud_neighbours->width=pointIdxVec.size();
+	  cloud_neighbours->height=1;
+	  cloud_neighbours->resize(pointIdxVec.size());
+              
+    for (size_t i = 0; i < pointIdxVec.size (); ++i)
+		cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+  }
 
 	return cloud_neighbours;
-	
 }
 
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,pcl::PointXYZRGBA* searchPoint)
+
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution, pcl::PointXYZRGBA* searchPoint)
 {
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
-	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree(resolution);
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
 
-	octree.setInputCloud(cloudSource);
-	octree.addPointsFromInputCloud();
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
 
 	std::vector<int> pointIdxVec;
-	
-	if(octree.voxelSearch(*searchPoint,pointIdxVec))
+
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+	if (octree.voxelSearch (*searchPoint, pointIdxVec))
 	{
 		cloud_neighbours->width=pointIdxVec.size();
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(pointIdxVec.size());
 
-		for(size_t i=0;i<pointIdxVec.size();++i)
-		{
+		for (size_t i = 0; i < pointIdxVec.size (); ++i)
 			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
-		}
 	}
 
 	return cloud_neighbours;
 }
-//pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)
-//{
-//	float angularResolution = (float) (  1.0f * (M_PI/180.0f));  //   1.0 degree in radians
-//	float maxAngleWidth     = (float) (57.0f * (M_PI/180.0f));  // 360.0 degree in radians
-//	float maxAngleHeight    = (float) (43.0f * (M_PI/180.0f));  // 180.0 degree in radians
-//
-//	pcl::PointCloud<pcl::PointXYZ>& point_cloud = *cloudXYZ;
-//	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
-//	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-//	float noiseLevel=0.00;
-//	float minRange = 0.0f;
-//	int borderSize = 1;
-//
-//	boost::shared_ptr<pcl::RangeImage> range_image_ptr(new pcl::RangeImage);
-//	pcl::RangeImage& range_image = *range_image_ptr;   
-//
-//	
-//	range_image.createFromPointCloud(point_cloud, angularResolution, maxAngleWidth, maxAngleHeight,sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
-//
-//	return range_image;
-//}
 
-//pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA)
-//{
-//	pcl::PointCloud<pcl::PointXYZRGBA>& point_cloud = *cloudXYZRGBA;
-//	Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(0.0f, 0.0f, 0.0f);
-//	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-//	float noiseLevel=0.00;
-//	float minRange = 0.0f;
-//	int borderSize = 1;
-//
-//	pcl::RangeImage rangeImage;
-//	rangeImage.createFromPointCloud(point_cloud, angularResolution, maxAngleWidth, maxAngleHeight, sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
-//
-//	return rangeImage;
-//}
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZ* searchPoint)
+{
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	 std::vector<int> pointIdxNKNSearch;
+  std::vector<float> pointNKNSquaredDistance;
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+
+    if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+  {
+	  cloud_neighbours->width=pointIdxNKNSearch.size();
+	  cloud_neighbours->height=1;
+	  cloud_neighbours->resize(pointIdxNKNSearch.size());
+	  for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+		  cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	}
+	return cloud_neighbours;
+}
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZRGBA* searchPoint)
+{
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	 std::vector<int> pointIdxNKNSearch;
+  std::vector<float> pointNKNSquaredDistance;
+
+  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+      if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+  {
+	  cloud_neighbours->width=pointIdxNKNSearch.size();
+	  cloud_neighbours->height=1;
+	  cloud_neighbours->resize(pointIdxNKNSearch.size());
+	  for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+		  cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+	}
+	return cloud_neighbours;
+}
+	pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
+{
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	std::vector<int> pointIdxRadiusSearch;
+  std::vector<float> pointRadiusSquaredDistance;
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+
+   if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+  {
+	  cloud_neighbours->width=pointIdxRadiusSearch.size();
+	  cloud_neighbours->height=1;
+	  cloud_neighbours->resize(pointIdxRadiusSearch.size());
+
+    for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+		cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+  }
+
+   return cloud_neighbours;
+}
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZRGBA* searchPoint)
+{
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	 std::vector<int> pointIdxRadiusSearch;
+  std::vector<float> pointRadiusSquaredDistance;
+
+  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+   if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+  {
+	  cloud_neighbours->width=pointIdxRadiusSearch.size();
+	  cloud_neighbours->height=1;
+	  cloud_neighbours->resize(pointIdxRadiusSearch.size());
+
+    for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
+		cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+  }
+
+   return cloud_neighbours;
+}
