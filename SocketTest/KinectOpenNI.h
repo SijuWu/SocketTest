@@ -41,8 +41,8 @@ private:
 	char key;
     int mode;
 
-	pcl::PointXYZ head;
-	pcl::PointXYZ leftHand;
-	pcl::PointXYZ rightHand;
+	pcl::PointXYZRGBA head;
+	pcl::PointXYZRGBA leftHand;
+	pcl::PointXYZRGBA rightHand;
 };
 

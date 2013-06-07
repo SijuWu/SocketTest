@@ -299,10 +299,37 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 	return cloud_p;
 }
 
-void PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
+std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
 {
+	getCloudPlane(cloudSource);
+	 pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+	tree->setInputCloud(cloudSource);
 
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+	ec.setClusterTolerance(30);
+	ec.setMinClusterSize(500);
+	ec.setMaxClusterSize(25000);
+	ec.setSearchMethod(tree);
+	ec.setInputCloud(cloudSource);
+	ec.extract(cluster_indices);
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>cloud_clusters;
+	int j=0;
+	for(std::vector<pcl::PointIndices>::const_iterator it=cluster_indices.begin();it!=cluster_indices.end();++it)
+	{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+		for(std::vector<int>::const_iterator pit=it->indices.begin();pit!=it->indices.end();pit++)
+			cloud_cluster->points.push_back(cloudSource->points[*pit]);
+		cloud_cluster->width=cloud_cluster->points.size();
+		cloud_cluster->height=1;
+		cloud_cluster->is_dense=true;
+		cloud_clusters.push_back(cloud_cluster);
+		j++;
+	}
+	
+	return cloud_clusters;
 }
+
 std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
 {
 	getCloudPlane(cloudSource);
@@ -332,7 +359,58 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanCluste
 	}
 	
 	return cloud_clusters;
+}
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,pcl::PointXYZ* searchPoint)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree(resolution);
+
+	octree.setInputCloud(cloudSource);
+	octree.addPointsFromInputCloud();
+
+	std::vector<int> pointIdxVec;
+
+	
+	if(octree.voxelSearch(*searchPoint,pointIdxVec))
+	{
+		cloud_neighbours->width=pointIdxVec.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxVec.size());
+
+		for(size_t i=0;i<pointIdxVec.size();++i)
+		{
+			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+		}
+	}
+
+	return cloud_neighbours;
+	
+}
+
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctree(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,pcl::PointXYZRGBA* searchPoint)
+{
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree(resolution);
+
+	octree.setInputCloud(cloudSource);
+	octree.addPointsFromInputCloud();
+
+	std::vector<int> pointIdxVec;
+	
+	if(octree.voxelSearch(*searchPoint,pointIdxVec))
+	{
+		cloud_neighbours->width=pointIdxVec.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(pointIdxVec.size());
+
+		for(size_t i=0;i<pointIdxVec.size();++i)
+		{
+			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+		}
+	}
+
+	return cloud_neighbours;
 }
 //pcl::RangeImage PointCloud::getRangeImage(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ)
 //{

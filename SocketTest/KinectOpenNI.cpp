@@ -132,12 +132,17 @@ void KinectOpenNI::KinectRun()
 		getCVImage(&depthImage,&colorImage);
 		bool getUser=checkUser(&skeletonCap);
 		displayImage();
-		if(getUser==true)
-		{	
-			
-		}
+		
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
+	
+		
+		if(getUser==true)
+		{	
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourOctree(cloudDownSample,200.0f,&head);
+			cloudViewer.showCloud(potentialHead);
+		}
+		else
 		cloudViewer.showCloud(cloudDownSample);
 		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
 		/*std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters=pointCloud.euclideanClusterExtract(cloudDownSample);
