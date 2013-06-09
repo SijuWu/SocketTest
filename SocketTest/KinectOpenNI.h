@@ -22,7 +22,8 @@ private:
 	void CheckOpenNIError( XnStatus result, std::string status ); 
 	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
 	void displayImage();
-	bool checkUser(xn::SkeletonCapability* skeletonCap);
+	//bool checkUser(xn::SkeletonCapability* skeletonCap, pcl::PointXYZRGBA* rightHand);
+	bool checkUser(xn::SkeletonCapability* skeletonCap/*, pcl::PointXYZRGBA* rightHand*/);
 	XnStatus result;  
 	xn::Context context;   
     xn::DepthMetaData depthMD;  
@@ -41,8 +42,21 @@ private:
 	char key;
     int mode;
 
-	pcl::PointXYZRGBA head;
+	/*pcl::PointXYZRGBA* head;
+	pcl::PointXYZRGBA* leftHand;
+	pcl::PointXYZRGBA* rightHand;*/
+	/*pcl::PointXYZRGBA head;
 	pcl::PointXYZRGBA leftHand;
-	pcl::PointXYZRGBA rightHand;
+	pcl::PointXYZRGBA rightHand;*/
+
+	pcl::PointXYZ head;
+	pcl::PointXYZ leftHand;
+	pcl::PointXYZ rightHand;
+
+	double rightHandX;
+	double rightHandY;
+	double rightHandZ;
+
+	
 };
 

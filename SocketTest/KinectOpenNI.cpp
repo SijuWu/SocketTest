@@ -94,6 +94,8 @@ KinectOpenNI::KinectOpenNI(void)
 	cvNamedWindow("depth",1);  
 	cvNamedWindow("image",1);  
 
+	
+
 }
 
 KinectOpenNI::~KinectOpenNI(void)
@@ -121,6 +123,8 @@ void KinectOpenNI::KinectRun()
 	key=0;
 	mode=1;
 
+	
+
 	while(key!=27)
 	{
 		context.WaitAnyUpdateAll();
@@ -133,18 +137,63 @@ void KinectOpenNI::KinectRun()
 		bool getUser=checkUser(&skeletonCap);
 		displayImage();
 		
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
 	
+	
+
+			
 		
 		if(getUser==true)
 		{	
-			/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourOctreeVoxel(cloudDownSample,30.0f,&head);*/
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,100.0f,&head);
-			cloudViewer.showCloud(potentialHead);
+			/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZRGBA(),"z",0.0f,2000.0f);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);*/
+
+			pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPassThrough=pointCloud.passThroughFilter(pointCloud.getCloudXYZ(),"z",0.0f,2000.0f);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr cloudDownSample=pointCloud.downSampling(cloudPassThrough,5.0f,5.0f,5.0f);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialCloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,100.0f,&head);
+			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialLeftHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,100.0f,&leftHand);
+			
+			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialRightHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,200.0f,&rightHand);
+
+			int count=0;
+			for(int i=0;i<potentialRightHand->points.size();i++)
+			{
+				if(potentialRightHand->points[i].x==0&&potentialRightHand->points[i].y==0&&potentialRightHand->points[i].z==0)
+					count++;
+			}
+			std::cout<<count;
+
+		/*	potentialCloud->width=potentialHead->width+potentialLeftHand->width+potentialRightHand->width;
+			potentialCloud->height=1;
+			potentialCloud->resize(potentialCloud->width*potentialCloud->height);
+			potentialCloud->points.insert(potentialCloud->points.end(),potentialHead->points.begin(),potentialHead->points.end());
+			potentialCloud->points.insert(potentialCloud->points.end(),potentialLeftHand->points.begin(),potentialLeftHand->points.end());
+			potentialCloud->points.insert(potentialCloud->points.end(),potentialRightHand->points.begin(),potentialRightHand->points.end());
+			cloudViewer.showCloud(potentialCloud);*/
+
+			 //std::vector<pcl::PointCloud<pcl::PointXYZRGBA> > initialclouds;
+			//std::vector<Eigen::Vector4f> arm_center;
+			/*pcl::PointCloud<pcl::PointXYZRGBA> leftHandCloud;
+			pcl::PointCloud<pcl::PointXYZRGBA> rightHandCloud;*/
+			pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud(new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud(new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::PointCloud<pcl::PointXYZ> potentialRight=*potentialRightHand;
+			pcl::PointCloud<pcl::PointXYZ> test;
+			
+			
+			if(potentialRightHand->points.size()!=0)
+			{
+				pointCloud.getNearBlobs2( potentialRightHand,leftHandCloud,rightHandCloud);
+				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr right(&rightHandCloud);*/
+
+				cloudViewer.showCloud(rightHandCloud);
+			}
+		
 		}
-		else
-		cloudViewer.showCloud(cloudDownSample);
+		/*else
+		cloudViewer.showCloud(cloudDownSample);*/
 		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
 		/*std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters=pointCloud.euclideanClusterExtract(cloudDownSample);
 		switch(key)
@@ -269,12 +318,10 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 				depthGenerator.ConvertRealWorldToProjective(24,skelPointsIn,skelPointsOut);
 				detected=true;
 
-				float F = 0.0019047619f;
 				
-				head.x=(skelPointsOut[0].X-320)*skelPointsOut[0].Z*F;;
-				head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;;
-				head.z=skelPointsOut[0].Z;
-
+				
+				
+				
 				for(int d=0;d<14;d++)  
 				{  
 					CvPoint startpoint = cvPoint(skelPointsOut[startSkelPoints[d]-1].X,skelPointsOut[startSkelPoints[d]-1].Y);  
@@ -284,6 +331,16 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 					cv::circle(colorImage,endpoint,3,CV_RGB(0,0,255),12);
 					cv::line(colorImage,startpoint,endpoint,CV_RGB(0,0,255),4);
 				}  
+
+				float F = 0.0019047619f;
+			    
+				head.x=(skelPointsOut[0].X-320)*skelPointsOut[0].Z*F;
+				head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;
+				head.z=skelPointsOut[0].Z;
+
+				rightHand.x=(skelPointsOut[15].X-320)*skelPointsOut[15].Z*F;
+				rightHand.y=(skelPointsOut[15].Y-240)*skelPointsOut[15].Z*F;
+				rightHand.z=skelPointsOut[15].Z;
 			}
 		}
 	}
@@ -291,11 +348,11 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 	const XnDepthPixel* pDepth=depthMD.Data();
 	const XnUInt8* pColor=imageMD.Data();
 	//pointCloud.createCloudXYZ(pDepth);
-	pointCloud.createCloudXYZRGBA(pDepth,pColor);
+	/*pointCloud.createCloudXYZRGBA(pDepth,pColor);*/
 
 	if(detected==true)
 	{
-		
+		pointCloud.createCloudXYZ(pDepth);
 		return true;
 	}
 	else

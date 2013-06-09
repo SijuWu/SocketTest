@@ -399,12 +399,24 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeVoxel(p
 
 	if (octree.voxelSearch (*searchPoint, pointIdxVec))
 	{
-		cloud_neighbours->width=pointIdxVec.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxVec.size());
+		std::vector<int>nonNullIndex;
 
 		for (size_t i = 0; i < pointIdxVec.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+		{
+			if(cloudSource->points[pointIdxVec[i]].x==0&&cloudSource->points[pointIdxVec[i]].y==0&&cloudSource->points[pointIdxVec[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxVec[i]);
+		}
+		
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
+
 	}
 
 	return cloud_neighbours;
@@ -424,12 +436,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(
 
 	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
 	{
-		cloud_neighbours->width=pointIdxNKNSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxNKNSearch.size());
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxNKNSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
+
 	return cloud_neighbours;
 }
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZRGBA* searchPoint)
@@ -446,11 +470,22 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 
 	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
 	{
-		cloud_neighbours->width=pointIdxNKNSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxNKNSearch.size());
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxNKNSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
 	return cloud_neighbours;
 }
@@ -468,12 +503,22 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl:
 
 	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
 	{
-		cloud_neighbours->width=pointIdxRadiusSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxRadiusSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
 
 	return cloud_neighbours;
@@ -492,12 +537,22 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(
 
 	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
 	{
-		cloud_neighbours->width=pointIdxRadiusSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxRadiusSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
 
 	return cloud_neighbours;
@@ -514,12 +569,22 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
 	{
-		cloud_neighbours->width= pointIdxNKNSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxNKNSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxNKNSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
 	return cloud_neighbours;
 }
@@ -534,13 +599,24 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighb
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
 	{
-		cloud_neighbours->width= pointIdxNKNSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxNKNSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxNKNSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxNKNSearch[i]);
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
+
 	return cloud_neighbours;
 }
 
@@ -555,13 +631,22 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
-		cloud_neighbours->width= pointIdxRadiusSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxRadiusSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
+		}
 
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
 	return cloud_neighbours;
 }
@@ -576,13 +661,415 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
-		cloud_neighbours->width= pointIdxRadiusSearch.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxRadiusSearch.size());
-
+		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+		{
+			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
+		}
 
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
 	}
+
 	return cloud_neighbours;
+}
+
+
+
+bool PointCloud::getNearBlobs2(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud,pcl::PointCloud<pcl::PointXYZRGBA> &leftHandCloud,pcl::PointCloud<pcl::PointXYZRGBA> &rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
+{
+	pcl::PointCloud<pcl::PointXYZRGBA> cloudout;
+	pcl::PointXYZRGBA pt,pt1,pt2;
+	pt.x=pt.y=pt.z=0;
+	int pointCount=cloud.points.size();
+	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
+	std::vector<float> dists;
+	Eigen::Vector4f centroid1,centroid2,nearcent1;
+
+	//find cloest pt to camera
+	NNN(cloud,&pt,inds1,dists,2000);
+	int ind=0;
+	double smallestdist;
+
+	for(int i=0;i<dists.size(); ++i){
+		if(dists[i]<smallestdist || i==0 ){
+			ind=inds1[i];
+			smallestdist=dists[i];
+		}
+	}
+
+	smallestdist=sqrt(smallestdist);
+	pt1=cloud.points[ind];
+
+	NNN(cloud,&pt1,inds2,100);
+
+	/**if(inds2.size()<100)
+	{
+	return false;
+	}*/
+	pcl::compute3DCentroid(cloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-20;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	std::vector<int> temp;
+	NNN(cloud,&pt2,temp,150);
+	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;*/
+
+	pcl::compute3DCentroid(cloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-100;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	getSubCloud(cloud,inds2,cloudout);
+
+
+	rightHandCloud=cloudout;
+	//*if(!foundarm)*/
+	//nearcents.push_back(nearcent1);
+	return true;
+}
+
+bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudout(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointXYZ pt,pt1,pt2;
+	pt.x=pt.y=pt.z=0;
+	int pointCount=cloud->points.size();
+	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
+	std::vector<float> dists;
+	Eigen::Vector4f centroid1,centroid2,nearcent1;
+
+	//find cloest pt to camera
+	NNN(cloud,&pt,inds1,dists,2000);
+	int ind=0;
+	double smallestdist;
+
+	for(int i=0;i<dists.size(); ++i){
+		if(dists[i]<smallestdist || i==0 ){
+			ind=inds1[i];
+			smallestdist=dists[i];
+		}
+	}
+
+	smallestdist=sqrt(smallestdist);
+	pt1=cloud->points[ind];
+
+	std::cout<<ind;
+	NNN(cloud,&pt1,inds2,100);
+
+	/**if(inds2.size()<100)
+	{
+	return false;
+	}*/
+	pcl::PointCloud<pcl::PointXYZ> handCloud=*cloud;
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-20;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	std::vector<int> temp;
+	NNN(cloud,&pt2,temp,150);
+	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;*/
+
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-10;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	getSubCloud(cloud,inds2,cloudout);
+
+
+	//rightHandCloud=cloudout;
+	rightHandCloud->points.swap(cloudout->points);
+	//*if(!foundarm)*/
+	//nearcents.push_back(nearcent1);
+	return true;
+}
+bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pcl::PointCloud<pcl::PointXYZRGBA>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZRGBA>::Ptr rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
+{
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudout(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointXYZRGBA pt,pt1,pt2;
+	pt.x=pt.y=pt.z=0;
+	int pointCount=cloud->points.size();
+	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
+	std::vector<float> dists;
+	Eigen::Vector4f centroid1,centroid2,nearcent1;
+
+	//find cloest pt to camera
+	NNN(cloud,&pt,inds1,dists,2000);
+	int ind=0;
+	double smallestdist;
+
+	for(int i=0;i<dists.size(); ++i){
+		if(dists[i]<smallestdist || i==0 ){
+			ind=inds1[i];
+			smallestdist=dists[i];
+		}
+	}
+
+	smallestdist=sqrt(smallestdist);
+	pt1=cloud->points[ind];
+
+	std::cout<<ind;
+	NNN(cloud,&pt1,inds2,100);
+
+	/**if(inds2.size()<100)
+	{
+	return false;
+	}*/
+	pcl::PointCloud<pcl::PointXYZRGBA> handCloud=*cloud;
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-20;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	std::vector<int> temp;
+	NNN(cloud,&pt2,temp,150);
+	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;*/
+
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-100;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	getSubCloud(cloud,inds2,cloudout);
+
+
+	//rightHandCloud=cloudout;
+	rightHandCloud->points.swap(cloudout->points);
+	//*if(!foundarm)*/
+	//nearcents.push_back(nearcent1);
+	return true;
+}
+//bool PointCloud::findNearbyPts(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud, std::vector<int> &cloudpts, Eigen::Vector4f &centroid)
+//{
+//	std::vector<int> inds(cloud.size(),1);
+//	std::vector<int>nearpts;
+//	std::vector<int>temp;
+//	for(int i=0;i<cloudpts.size();++i)
+//		inds[cloudpts[i]]=-1;
+//	for(int i=0;i<cloudpts.size();++i)
+//	{
+//		if(inds[cloudpts[i]]==-1)
+//		{
+//			NNN(cloud,&(cloud.points[cloudpts[i]]),temp,50);
+//			//NNN(cloud,&cloud.points[cloudpts[i]],temp,50);
+//			for(int j=0;i<temp.size();++j)
+//			{
+//				if(inds[temp[j]]==1)
+//				{
+//					nearpts.push_back(temp[j]);
+//					inds[temp[j]]=2;
+//				}
+//				else
+//					inds[temp[j]]=-2;
+//			}
+//		}
+//	}
+//	if(nearpts.size())
+//		pcl::compute3DCentroid(cloud,nearpts,centroid);
+//	else
+//		return false;
+//	return true;
+//}
+
+void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZRGBA> &cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZRGBA> &subCloud)
+{
+	for(int i=0;i<subCloudIndex.size();i++)
+	{
+		subCloud.points.push_back(cloudSource.points[subCloudIndex[i]]);
+	}
+}
+
+void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZ>::Ptr subCloud)
+{
+	subCloud->width=cloudSource->width;
+	subCloud->height=cloudSource->height;
+	subCloud->resize(subCloud->width);
+
+	for(int i=0;i<subCloudIndex.size();i++)
+	{
+		subCloud->points.push_back(cloudSource->points[subCloudIndex[i]]);
+	}
+}
+void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZRGBA>::Ptr subCloud)
+{
+	subCloud->width=cloudSource->width;
+	subCloud->height=cloudSource->height;
+	subCloud->resize(subCloud->width);
+
+	for(int i=0;i<subCloudIndex.size();i++)
+	{
+		subCloud->points.push_back(cloudSource->points[subCloudIndex[i]]);
+	}
+}
+//performs radius search in a simplistic fashion
+
+void PointCloud::NNN(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud, pcl::PointXYZRGBA* center, std::vector<int> &inds, double radius){
+	inds.clear();
+	double r2=radius*radius;
+	double smallerrad=radius/std::sqrt(3.0);
+	double diffx,diffy,diffz;
+	for(int i=0;i<cloud.points.size(); i++){
+		if(cloud.points[i].x==0&&cloud.points[i].y==0&&cloud.points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud.points[i].x - center->x);
+		diffy=fabs(cloud.points[i].y - center->y);
+		diffz=fabs(cloud.points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//if the point is also in a cube whose circumradius is the search radius, the point is close enough
+			if(diffx < smallerrad && diffy < smallerrad && diffz < smallerrad) //also in inner box - include!
+				inds.push_back(i);
+			//if the point actually falls in between the two cubes, we do the more computationally intensive multiply...
+			else//between the boxes: check for actual distance
+				if(diffx*diffx+diffy*diffy+diffz*diffz < r2)
+					inds.push_back(i);
+		}//endif in outer box
+	}//endfor all points in cloud
+}
+
+
+void PointCloud::NNN(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud, pcl::PointXYZRGBA* center, std::vector<int> &inds, std::vector<float> &dists, double radius){
+	inds.clear();
+	double r2=radius*radius;
+	double diffx,diffy,diffz;
+	double sqrdist;
+	for(int i=0;i<cloud.points.size(); i++){
+		if(cloud.points[i].x==0&&cloud.points[i].y==0&&cloud.points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud.points[i].x - center->x);
+		diffy=fabs(cloud.points[i].y - center->y);
+		diffz=fabs(cloud.points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//calculate actual distance to the point
+			sqrdist=diffx*diffx+diffy*diffy+diffz*diffz;
+			if(sqrdist < r2){
+				inds.push_back(i);
+				dists.push_back(sqrdist);
+			}
+		}//endif in outer box
+	}//endfor all points in cloud
+}
+
+void PointCloud::NNN(const pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud, pcl::PointXYZRGBA* center, std::vector<int> &inds, double radius)
+{
+	inds.clear();
+	double r2=radius*radius;
+	double smallerrad=radius/std::sqrt(3.0);
+	double diffx,diffy,diffz;
+	for(int i=0;i<cloud->points.size(); i++){
+		if(cloud->points[i].x==0&&cloud->points[i].y==0&&cloud->points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud->points[i].x - center->x);
+		diffy=fabs(cloud->points[i].y - center->y);
+		diffz=fabs(cloud->points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//if the point is also in a cube whose circumradius is the search radius, the point is close enough
+			if(diffx < smallerrad && diffy < smallerrad && diffz < smallerrad) //also in inner box - include!
+				inds.push_back(i);
+			//if the point actually falls in between the two cubes, we do the more computationally intensive multiply...
+			else//between the boxes: check for actual distance
+				if(diffx*diffx+diffy*diffy+diffz*diffz < r2)
+					inds.push_back(i);
+		}//endif in outer box
+	}//endfor all points in cloud
+}
+void PointCloud::NNN(const pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud, pcl::PointXYZRGBA* center, std::vector<int> &inds, std::vector<float> &dists, double radius)
+{
+	inds.clear();
+	double r2=radius*radius;
+	double diffx,diffy,diffz;
+	double sqrdist;
+	for(int i=0;i<cloud->points.size(); i++){
+		if(cloud->points[i].x==0&&cloud->points[i].y==0&&cloud->points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud->points[i].x - center->x);
+		diffy=fabs(cloud->points[i].y - center->y);
+		diffz=fabs(cloud->points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//calculate actual distance to the point
+			sqrdist=diffx*diffx+diffy*diffy+diffz*diffz;
+			if(sqrdist < r2){
+				inds.push_back(i);
+				dists.push_back(sqrdist);
+			}
+		}//endif in outer box
+	}//endfor all points in cloud
+}
+
+void PointCloud::NNN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointXYZ* center, std::vector<int> &inds, double radius)
+{
+	inds.clear();
+	double r2=radius*radius;
+	double smallerrad=radius/std::sqrt(3.0);
+	double diffx,diffy,diffz;
+	for(int i=0;i<cloud->points.size(); i++){
+		if(cloud->points[i].x==0&&cloud->points[i].y==0&&cloud->points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud->points[i].x - center->x);
+		diffy=fabs(cloud->points[i].y - center->y);
+		diffz=fabs(cloud->points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//if the point is also in a cube whose circumradius is the search radius, the point is close enough
+			if(diffx < smallerrad && diffy < smallerrad && diffz < smallerrad) //also in inner box - include!
+				inds.push_back(i);
+			//if the point actually falls in between the two cubes, we do the more computationally intensive multiply...
+			else//between the boxes: check for actual distance
+				if(diffx*diffx+diffy*diffy+diffz*diffz < r2)
+					inds.push_back(i);
+		}//endif in outer box
+	}//endfor all points in cloud
+}
+
+void PointCloud::NNN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointXYZ* center, std::vector<int> &inds, std::vector<float> &dists, double radius)
+{
+	inds.clear();
+	double r2=radius*radius;
+	double diffx,diffy,diffz;
+	double sqrdist;
+	for(int i=0;i<cloud->points.size(); i++){
+		if(cloud->points[i].x==0&&cloud->points[i].y==0&&cloud->points[i].z==0)
+			continue;
+		//find the distance between the cloud point and the reference in the three dimensions:
+		diffx=fabs(cloud->points[i].x - center->x);
+		diffy=fabs(cloud->points[i].y - center->y);
+		diffz=fabs(cloud->points[i].z - center->z);
+		//first find whether the point is in an axis aligned cube around the point -   this is a very quick check
+		if(diffx < radius && diffy < radius && diffz < radius){ //in outer box
+			//calculate actual distance to the point
+			sqrdist=diffx*diffx+diffy*diffy+diffz*diffz;
+			if(sqrdist < r2){
+				inds.push_back(i);
+				dists.push_back(sqrdist);
+			}
+		}//endif in outer box
+	}//endfor all points in cloud
 }
