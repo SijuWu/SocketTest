@@ -684,62 +684,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 
 
 
-bool PointCloud::getNearBlobs2(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud,pcl::PointCloud<pcl::PointXYZRGBA> &leftHandCloud,pcl::PointCloud<pcl::PointXYZRGBA> &rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
-{
-	pcl::PointCloud<pcl::PointXYZRGBA> cloudout;
-	pcl::PointXYZRGBA pt,pt1,pt2;
-	pt.x=pt.y=pt.z=0;
-	int pointCount=cloud.points.size();
-	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
-	std::vector<float> dists;
-	Eigen::Vector4f centroid1,centroid2,nearcent1;
-
-	//find cloest pt to camera
-	NNN(cloud,&pt,inds1,dists,2000);
-	int ind=0;
-	double smallestdist;
-
-	for(int i=0;i<dists.size(); ++i){
-		if(dists[i]<smallestdist || i==0 ){
-			ind=inds1[i];
-			smallestdist=dists[i];
-		}
-	}
-
-	smallestdist=sqrt(smallestdist);
-	pt1=cloud.points[ind];
-
-	NNN(cloud,&pt1,inds2,100);
-
-	/**if(inds2.size()<100)
-	{
-	return false;
-	}*/
-	pcl::compute3DCentroid(cloud,inds2,centroid1);
-	pt2.x=centroid1(0);
-	pt2.y=centroid1(1)-20;
-	pt2.z=centroid1(2);
-	NNN(cloud,&pt2,inds2,100);
-
-	std::vector<int> temp;
-	NNN(cloud,&pt2,temp,150);
-	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
-	return false;*/
-
-	pcl::compute3DCentroid(cloud,inds2,centroid1);
-	pt2.x=centroid1(0);
-	pt2.y=centroid1(1)-100;
-	pt2.z=centroid1(2);
-	NNN(cloud,&pt2,inds2,100);
-
-	getSubCloud(cloud,inds2,cloudout);
-
-
-	rightHandCloud=cloudout;
-	//*if(!foundarm)*/
-	//nearcents.push_back(nearcent1);
-	return true;
-}
+//
 
 bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
 {
@@ -782,8 +727,8 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::P
 
 	std::vector<int> temp;
 	NNN(cloud,&pt2,temp,150);
-	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
-	return false;*/
+	if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;
 
 	pcl::compute3DCentroid(handCloud,inds2,centroid1);
 	pt2.x=centroid1(0);
@@ -841,8 +786,8 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pc
 
 	std::vector<int> temp;
 	NNN(cloud,&pt2,temp,150);
-	/**if(!(findNearbyPts(cloud,temp,nearcent1)))
-	return false;*/
+	if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;
 
 	pcl::compute3DCentroid(handCloud,inds2,centroid1);
 	pt2.x=centroid1(0);
@@ -859,37 +804,83 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pc
 	//nearcents.push_back(nearcent1);
 	return true;
 }
-//bool PointCloud::findNearbyPts(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud, std::vector<int> &cloudpts, Eigen::Vector4f &centroid)
-//{
-//	std::vector<int> inds(cloud.size(),1);
-//	std::vector<int>nearpts;
-//	std::vector<int>temp;
-//	for(int i=0;i<cloudpts.size();++i)
-//		inds[cloudpts[i]]=-1;
-//	for(int i=0;i<cloudpts.size();++i)
-//	{
-//		if(inds[cloudpts[i]]==-1)
-//		{
-//			NNN(cloud,&(cloud.points[cloudpts[i]]),temp,50);
-//			//NNN(cloud,&cloud.points[cloudpts[i]],temp,50);
-//			for(int j=0;i<temp.size();++j)
-//			{
-//				if(inds[temp[j]]==1)
-//				{
-//					nearpts.push_back(temp[j]);
-//					inds[temp[j]]=2;
-//				}
-//				else
-//					inds[temp[j]]=-2;
-//			}
-//		}
-//	}
-//	if(nearpts.size())
-//		pcl::compute3DCentroid(cloud,nearpts,centroid);
-//	else
-//		return false;
-//	return true;
-//}
+
+bool PointCloud::findNearbyPts(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, std::vector<int> &cloudpts, Eigen::Vector4f &centroid)
+{
+	std::vector<int> inds(cloud->points.size(),1);
+	std::vector<int>nearpts;
+	std::vector<int>temp;
+	for(int i=0;i<cloudpts.size();++i)
+		inds[cloudpts[i]]=-1;
+	for(int i=0;i<cloudpts.size();++i)
+	{
+		if(inds[cloudpts[i]]==-1)
+		{
+			NNN(cloud,&(cloud->points[cloudpts[i]]),temp,50);
+			//NNN(cloud,&cloud.points[cloudpts[i]],temp,50);
+			for(int j=0;j<temp.size();++j)
+			{
+				if(inds[temp[j]]==1)
+				{
+					nearpts.push_back(temp[j]);
+					inds[temp[j]]=2;
+				}
+				else
+				{
+					/*if(temp[j]>=0)*/
+					inds[temp[j]]=-2;
+				}
+					
+			}
+		}
+	}
+	if(nearpts.size())
+	{
+		//pcl::PointCloud<pcl::PointXYZ> handCloud=*cloud;
+		pcl::compute3DCentroid(*cloud,nearpts,centroid);
+	}
+		
+	else
+		return false;
+	return true;
+}
+
+bool PointCloud::findNearbyPts(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud, std::vector<int> &cloudpts, Eigen::Vector4f &centroid)
+{
+	
+	std::vector<int> inds(cloud->points.size(),1);
+	std::vector<int>nearpts;
+	std::vector<int>temp;
+	for(int i=0;i<cloudpts.size();++i)
+		inds[cloudpts[i]]=-1;
+	for(int i=0;i<cloudpts.size();++i)
+	{
+		if(inds[cloudpts[i]]==-1)
+		{
+			NNN(cloud,&(cloud->points[cloudpts[i]]),temp,50);
+			//NNN(cloud,&cloud.points[cloudpts[i]],temp,50);
+			for(int j=0;j<temp.size();++j)
+			{
+				if(inds[temp[j]]==1)
+				{
+					nearpts.push_back(temp[j]);
+					inds[temp[j]]=2;
+				}
+				else
+					inds[temp[j]]=-2;
+			}
+		}
+	}
+	if(nearpts.size())
+	{
+		//pcl::PointCloud<pcl::PointXYZ> handCloud=*cloud;
+		pcl::compute3DCentroid(*cloud,nearpts,centroid);
+	}
+		
+	else
+		return false;
+	return true;
+}
 
 void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZRGBA> &cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZRGBA> &subCloud)
 {
