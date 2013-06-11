@@ -304,7 +304,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 	return cloud_p;
 }
 
-std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource)
+std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize)
 {
 	getCloudPlane(cloudSource);
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
@@ -312,9 +312,12 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExt
 
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	ec.setClusterTolerance(30);
+	ec.setClusterTolerance(tolerance);
+	ec.setMinClusterSize(minClusterSize);
+	ec.setMaxClusterSize(maxClusterSize);
+	/*ec.setClusterTolerance(30);
 	ec.setMinClusterSize(500);
-	ec.setMaxClusterSize(25000);
+	ec.setMaxClusterSize(25000);*/
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloudSource);
 	ec.extract(cluster_indices);
@@ -335,7 +338,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExt
 	return cloud_clusters;
 }
 
-std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource)
+std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize)
 {
 	getCloudPlane(cloudSource);
 	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
@@ -343,9 +346,12 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanCluste
 
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
-	ec.setClusterTolerance(30);
-	ec.setMinClusterSize(500);
-	ec.setMaxClusterSize(25000);
+	ec.setClusterTolerance(tolerance);
+	ec.setMinClusterSize(minClusterSize);
+	ec.setMaxClusterSize(maxClusterSize);
+	//ec.setClusterTolerance(30);
+	//ec.setMinClusterSize(500);
+	//ec.setMaxClusterSize(25000);
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloudSource);
 	ec.extract(cluster_indices);
@@ -678,13 +684,13 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighb
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float radius, pcl::PointXYZ* searchPoint)
 {
-	std::cout<<0<<std::endl;
+	
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloudSource);
-	std::cout<<1<<std::endl;
+	
 	std::vector<int> pointIdxRadiusSearch;
 	std::vector<float> pointRadiusSquaredDistance;
-	std::cout<<2<<std::endl;
+	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 	/*if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
@@ -711,8 +717,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
 		}
 
-		std::cout<<3<<std::endl;
-
+		
 		cloud_neighbours->width= nonNullIndex.size();
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
@@ -722,7 +727,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
 
-		std::cout<<4<<std::endl;
+		
 	}
 	return cloud_neighbours;
 }
@@ -1285,11 +1290,38 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 		 if(inds2[i]==-1)
 			 inds3.push_back(i);
 	 }
-	 std::cout<<max<<std::endl;
-	 std::cout<<min<<std::endl;
-	 std::cout<<"next"<<std::endl;
+	/* std::cout<<max<<std::endl;*/
+	/* std::cout<<min<<std::endl;
+	 std::cout<<"next"<<std::endl;*/
 
 	 getSubCloud(handWithOutArm,inds,palm,true);
 	 getSubCloud(handWithOutArm,inds3,digits,true);
 	
+ }
+
+ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::segFingers(pcl::PointCloud<pcl::PointXYZ>::Ptr digits,double clustertol,int mincluster)
+ {
+	 /*if(digits->points.size()==0)
+		 return NULL;*/
+	 std::vector<std::vector<int>> indclusts;
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>clusters=euclideanClusterExtract(digits,clustertol,mincluster,1000);
+	return clusters;
+ }
+
+ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getColorPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr initialHand,int red,int green,int blue)
+ {
+	 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorCloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	 for(int i=0;i<initialHand->points.size();++i)
+	 {
+		 pcl::PointXYZRGBA point;
+		 point.x=initialHand->points[i].x;
+		 point.y=initialHand->points[i].y;
+		 point.z=initialHand->points[i].z;
+		 point.r=0;
+		 point.g=0;
+		 point.b=255;
+		 colorCloud->points.push_back(point);
+	 }
+	 colorCloud->width=colorCloud->points.size();
+	 colorCloud->height=1;
  }

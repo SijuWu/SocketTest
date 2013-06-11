@@ -190,22 +190,71 @@ void KinectOpenNI::KinectRun()
 				pcl::PointCloud<pcl::PointXYZ>::Ptr digits(new pcl::PointCloud<pcl::PointXYZ>); 
 				
 				pointCloud.radiusFilter(rightHandCloud,300,20,0,palm,digits);
-				
+
+				std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>fingers;
+				if(digits->points.size()!=0)
+				{
+					fingers=pointCloud.segFingers(digits,5,20);
+					std::cout<<fingers.size()<<std::endl;
+				}
+
+				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				for(int i=0;i<rightHandCloud->points.size();++i)
+				{
+					pcl::PointXYZRGBA point;
+					point.x=rightHandCloud->points[i].x;
+					point.y=rightHandCloud->points[i].y;
+					point.z=rightHandCloud->points[i].z;
+					point.r=0;
+					point.g=0;
+					point.b=255;
+					colorHand->points.push_back(point);
+				}
+				colorHand->width=colorHand->points.size();
+				colorHand->height=1;*/
+				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand=pointCloud.getColorPointCloud(rightHandCloud,0,0,255);
+				cloudViewer.showCloud(colorHand);
+				/*if(key=='0')
+					mode=0;
 				if(key=='1')
 					mode=1;
 				if(key=='2')
 					mode=2;
 				if(key=='3')
 					mode=3;
-				if(mode==1)
+				if(key=='4')
+					mode=4;
+				if(key=='5')
+					mode=5;
+				if(key=='6')
+					mode=6;
+				if(key=='7')
+					mode=7;
+
+				if(mode==0)
 					if(rightHandCloud!=NULL)
-					cloudViewer.showCloud(rightHandCloud);
+						cloudViewer.showCloud(rightHandCloud);
+				if(mode==1)
+					if(fingers.size()>=1)
+						cloudViewer.showCloud(fingers[0]);
 				if(mode==2)
-					if(palm!=NULL)
-					cloudViewer.showCloud(palm);
+					if(fingers.size()>=2)
+						cloudViewer.showCloud(fingers[1]);
 				if(mode==3)
-					if(digits!=NULL)
-					cloudViewer.showCloud(digits);
+					if(fingers.size()>=3)
+						cloudViewer.showCloud(fingers[2]);
+				if(mode==4)
+					if(fingers.size()>=4)
+						cloudViewer.showCloud(fingers[3]);
+				if(mode==5)
+					if(fingers.size()>=5)
+						cloudViewer.showCloud(fingers[4]);
+				if(mode==6)
+					if(fingers.size()>=6)
+						cloudViewer.showCloud(fingers[5]);
+				if(mode==7)
+					if(fingers.size()>=7)
+						cloudViewer.showCloud(digits);*/
 			}
 		
 		}
