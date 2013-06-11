@@ -33,7 +33,7 @@
     <ClInclude Include="PointCloud.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NNN.h">
+    <ClInclude Include="SplitCloud2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -56,7 +56,7 @@
     <ClCompile Include="PointCloud.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NNN.cpp">
+    <ClCompile Include="SplitCloud2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

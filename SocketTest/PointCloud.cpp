@@ -1,6 +1,11 @@
 ﻿#include "StdAfx.h"
 #include "PointCloud.h"
 
+static pcl::PointXYZ eigenToPclPoint(const Eigen::Vector4f &v){
+   pcl::PointXYZ p;
+   p.x=v(0); p.y=v(1); p.z=v(2);
+   return p;
+}
 
 PointCloud::PointCloud(void)
 {
@@ -374,12 +379,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::
 
 	if (octree.voxelSearch (*searchPoint, pointIdxVec))
 	{
-		cloud_neighbours->width=pointIdxVec.size();
-		cloud_neighbours->height=1;
-		cloud_neighbours->resize(pointIdxVec.size());
+		std::vector<int>nonNullIndex;
 
 		for (size_t i = 0; i < pointIdxVec.size (); ++i)
-			cloud_neighbours->push_back(cloudSource->points[pointIdxVec[i]]);
+		{
+			if(cloudSource->points[pointIdxVec[i]].x==0&&cloudSource->points[pointIdxVec[i]].y==0&&cloudSource->points[pointIdxVec[i]].z==0)
+				continue;
+			nonNullIndex.push_back(pointIdxVec[i]);
+		}
+		
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
+
 	}
 
 	return cloud_neighbours;
@@ -489,6 +506,45 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 	}
 	return cloud_neighbours;
 }
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeOutsideRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
+{
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+
+	octree.setInputCloud (cloudSource);
+	octree.addPointsFromInputCloud ();
+
+	std::vector<int> pointIdxRadiusSearch;
+	std::vector<float> pointRadiusSquaredDistance;
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+
+	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
+	{
+		std::vector<int>nonNullIndex;
+		for(int i=0;i<cloudSource->points.size();++i)
+		{
+			if(std::find(pointIdxRadiusSearch.begin(),pointIdxRadiusSearch.end(),i)==pointIdxRadiusSearch.end())
+			{
+				if(cloudSource->points[i].x==0&&cloudSource->points[i].y==0&&cloudSource->points[i].z==0)
+					continue;
+				nonNullIndex.push_back(i);
+			}
+		}
+
+		cloud_neighbours->width= nonNullIndex.size();
+		cloud_neighbours->height=1;
+		cloud_neighbours->resize(nonNullIndex.size());
+
+		for(int i=0;i<nonNullIndex.size();i++)
+		{
+			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
+		}
+	}
+
+	return cloud_neighbours;
+}
+
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
 {
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
@@ -622,13 +678,29 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighb
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float radius, pcl::PointXYZ* searchPoint)
 {
+	std::cout<<0<<std::endl;
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloudSource);
-
+	std::cout<<1<<std::endl;
 	std::vector<int> pointIdxRadiusSearch;
 	std::vector<float> pointRadiusSquaredDistance;
-
+	std::cout<<2<<std::endl;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+	/*if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
+	{
+		for(int i=0;i<pointIdxRadiusSearch.size();++i)
+		{
+			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
+				continue;
+			cloud_neighbours->points.push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
+		}
+	}
+
+	cloud_neighbours->width=cloud_neighbours->points.size();
+	cloud_neighbours->height=1;
+	cloud_neighbours->is_dense=true;
+	cloud_neighbours->resize(cloud_neighbours->width);*/
+	
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
@@ -639,6 +711,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 			nonNullIndex.push_back(pointIdxRadiusSearch[i]);
 		}
 
+		std::cout<<3<<std::endl;
+
 		cloud_neighbours->width= nonNullIndex.size();
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
@@ -647,6 +721,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
+
+		std::cout<<4<<std::endl;
 	}
 	return cloud_neighbours;
 }
@@ -686,7 +762,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 
 //
 
-bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud/*, std::vector<Eigen::Vector4f> &nearcents*/)
+bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud)
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudout(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::PointXYZ pt,pt1,pt2;
@@ -702,16 +778,16 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::P
 	double smallestdist;
 
 	for(int i=0;i<dists.size(); ++i){
-		if(dists[i]<smallestdist || i==0 ){
+		if( i==0 ||dists[i]<smallestdist){
 			ind=inds1[i];
 			smallestdist=dists[i];
 		}
 	}
 
-	smallestdist=sqrt(smallestdist);
+	smallestdist=std::sqrt(smallestdist);
 	pt1=cloud->points[ind];
 
-	std::cout<<ind;
+	
 	NNN(cloud,&pt1,inds2,100);
 
 	/**if(inds2.size()<100)
@@ -742,6 +818,7 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::P
 	//rightHandCloud=cloudout;
 	rightHandCloud->points.swap(cloudout->points);
 	//*if(!foundarm)*/
+	arm_center[0]=nearcent1;
 	//nearcents.push_back(nearcent1);
 	return true;
 }
@@ -767,10 +844,10 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pc
 		}
 	}
 
-	smallestdist=sqrt(smallestdist);
+	smallestdist=std::sqrt(smallestdist);
 	pt1=cloud->points[ind];
 
-	std::cout<<ind;
+	
 	NNN(cloud,&pt1,inds2,100);
 
 	/**if(inds2.size()<100)
@@ -882,37 +959,66 @@ bool PointCloud::findNearbyPts(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud, st
 	return true;
 }
 
-void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZRGBA> &cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZRGBA> &subCloud)
-{
-	for(int i=0;i<subCloudIndex.size();i++)
-	{
-		subCloud.points.push_back(cloudSource.points[subCloudIndex[i]]);
-	}
-}
-
 void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZ>::Ptr subCloud)
 {
-	subCloud->width=cloudSource->width;
-	subCloud->height=cloudSource->height;
+	subCloud->width=subCloudIndex.size();
+	subCloud->height=1;
 	subCloud->resize(subCloud->width);
 
 	for(int i=0;i<subCloudIndex.size();i++)
 	{
-		subCloud->points.push_back(cloudSource->points[subCloudIndex[i]]);
+		subCloud->points[i]=(cloudSource->points[subCloudIndex[i]]);
 	}
 }
 void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZRGBA>::Ptr subCloud)
 {
-	subCloud->width=cloudSource->width;
-	subCloud->height=cloudSource->height;
+	subCloud->width=subCloudIndex.size();
+	subCloud->height=1;
 	subCloud->resize(subCloud->width);
 
 	for(int i=0;i<subCloudIndex.size();i++)
 	{
-		subCloud->points.push_back(cloudSource->points[subCloudIndex[i]]);
+		subCloud->points[i]=(cloudSource->points[subCloudIndex[i]]);
 	}
 }
 //performs radius search in a simplistic fashion
+
+void PointCloud::getSubCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource, std::vector<int> subCloudIndex,pcl::PointCloud<pcl::PointXYZ>::Ptr subCloud,bool keep)
+{
+	
+	if(keep==false)
+	{
+		std::vector<int> remainIndex;
+		for(int i=0;i<cloudSource->points.size();++i)
+		{
+			if(std::find(subCloudIndex.begin(),subCloudIndex.end(),i)==subCloudIndex.end())
+				remainIndex.push_back(i);
+		}
+
+		subCloud->width=remainIndex.size();
+		subCloud->height=1;
+		subCloud->resize(remainIndex.size());
+
+		for(int i=0;i<remainIndex.size();++i)
+		{
+			subCloud->points[i]=cloudSource->points[remainIndex[i]];
+		}
+	}
+
+	else
+	{
+		subCloud->width=subCloudIndex.size();
+		subCloud->height=1;
+		subCloud->resize(subCloudIndex.size());
+
+		for(int i=0;i<subCloudIndex.size();i++)
+		{
+			subCloud->points[i]=cloudSource->points[subCloudIndex[i]];
+		}
+	}
+
+	
+}
 
 void PointCloud::NNN(const pcl::PointCloud<pcl::PointXYZRGBA> &cloud, pcl::PointXYZRGBA* center, std::vector<int> &inds, double radius){
 	inds.clear();
@@ -1064,3 +1170,126 @@ void PointCloud::NNN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointXYZ* c
 		}//endif in outer box
 	}//endfor all points in cloud
 }
+
+void PointCloud::getEigens(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int hand)
+{
+	pcl::PointCloud<pcl::PointXYZ> cloud=*handCloud;
+	Eigen::Vector4f centroid;
+	Eigen::Vector4f direction;
+	Eigen::Vector4f armvector;
+
+	Eigen::Vector3f eigen_values;
+	Eigen::Matrix3f eigen_vectors;
+	Eigen::Matrix3f cov;
+
+	pcl::compute3DCentroid(cloud,centroid);
+	distfromsensor=centroid.norm();
+	pcl::computeCovarianceMatrixNormalized(cloud,centroid,cov);
+
+	pcl::eigen33(cov,eigen_vectors,eigen_values);
+	
+	direction(0)=eigen_vectors (0, 2);
+	direction(1)=eigen_vectors (1, 2);
+	direction(2)=eigen_vectors (2, 2);
+	
+	if(hand==0)
+	{
+		/*	armvector(0)=arm_center[0]->x();
+		armvector(1)=arm->y();
+		armvector(2)=arm->z();*/
+		armvector=arm_center[0];
+	}
+	if(hand==1)
+	{
+		armvector=arm_center[1];
+	}
+
+
+
+	flipvec(armvector,centroid,direction);
+
+	handPoints[0]=centroid;
+	handPoints[1]=centroid+direction;
+}
+
+void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fcentroid,Eigen::Vector4f &dir ){
+   if((fcentroid-palm).dot(dir) <0)
+      dir=dir*-1.0;
+
+ }
+
+ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int nnthresh,double tol,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr palm,pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
+ {
+	
+
+	 vector<int> tempinds;
+	 if(hand==0)
+		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
+	 else
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
+	 /*if(handCloud->points.size()==0)
+	 {
+		 std::cout<<"000000000000000000000"<<std::endl;
+	 }*/
+
+	/* pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 Eigen::Vector4f handCenter;
+	 
+	 pcl::compute3DCentroid(handPoints,handCenter);
+	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);
+	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);
+	 palm->points.swap(palmCloud->points);
+	 digits->points.swap(digitsCloud->points);*/
+
+	 double t1,t2,t3;
+	 std::vector<int> inds,inds2,inds3;
+	 std::vector<int> searchinds;
+	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 SplitCloud2 sc2(handPoints,tol);
+	 inds2.resize(handPoints.points.size(),-1);
+
+	 int min=9999;
+	 int max=0;
+
+	 int label;
+
+	 for(int i=0;i<handPoints.points.size();++i)
+	 {
+		 if(inds2[i]==0)
+			 continue;
+		 sc2.NNN(&handPoints.points[i],searchinds,tol,false);
+
+		 if(searchinds.size()>max)
+			 max=searchinds.size();
+		 if(searchinds.size()<min)
+			 min=searchinds.size();
+		 if(searchinds.size()>(65))
+		 {
+			 inds.push_back(i);
+
+			 if(searchinds.size()>(80))
+				 label=0;
+			 else 
+				 label=1;
+			 for(int j=0;j<searchinds.size();++j)
+				 inds2[searchinds[j]]=label;
+		 }
+	 }
+
+	 for(int i=0;i<handPoints.points.size();++i)
+	 {
+		 if(inds2[i]==-1)
+			 inds3.push_back(i);
+	 }
+	 std::cout<<max<<std::endl;
+	 std::cout<<min<<std::endl;
+	 std::cout<<"next"<<std::endl;
+
+	 getSubCloud(handWithOutArm,inds,palm,true);
+	 getSubCloud(handWithOutArm,inds3,digits,true);
+	
+ }

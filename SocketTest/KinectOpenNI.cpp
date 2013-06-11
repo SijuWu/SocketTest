@@ -157,13 +157,9 @@ void KinectOpenNI::KinectRun()
 			
 			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialRightHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,200.0f,&rightHand);
 
-			int count=0;
-			for(int i=0;i<potentialRightHand->points.size();i++)
-			{
-				if(potentialRightHand->points[i].x==0&&potentialRightHand->points[i].y==0&&potentialRightHand->points[i].z==0)
-					count++;
-			}
-			std::cout<<count;
+			
+			
+			
 
 		/*	potentialCloud->width=potentialHead->width+potentialLeftHand->width+potentialRightHand->width;
 			potentialCloud->height=1;
@@ -185,84 +181,35 @@ void KinectOpenNI::KinectRun()
 			
 			if(potentialRightHand->points.size()!=0)
 			{
+				Eigen::Vector4f* leftNearCent;
+				Eigen::Vector4f* rightNearCent;
 				pointCloud.getNearBlobs2( potentialRightHand,leftHandCloud,rightHandCloud);
 				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr right(&rightHandCloud);*/
-
-				cloudViewer.showCloud(rightHandCloud);
+				pointCloud.getEigens(rightHandCloud,0);
+				pcl::PointCloud<pcl::PointXYZ>::Ptr palm(new pcl::PointCloud<pcl::PointXYZ>);
+				pcl::PointCloud<pcl::PointXYZ>::Ptr digits(new pcl::PointCloud<pcl::PointXYZ>); 
+				
+				pointCloud.radiusFilter(rightHandCloud,300,20,0,palm,digits);
+				
+				if(key=='1')
+					mode=1;
+				if(key=='2')
+					mode=2;
+				if(key=='3')
+					mode=3;
+				if(mode==1)
+					if(rightHandCloud!=NULL)
+					cloudViewer.showCloud(rightHandCloud);
+				if(mode==2)
+					if(palm!=NULL)
+					cloudViewer.showCloud(palm);
+				if(mode==3)
+					if(digits!=NULL)
+					cloudViewer.showCloud(digits);
 			}
 		
 		}
-		/*else
-		cloudViewer.showCloud(cloudDownSample);*/
-		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr planeCloud=pointCloud.getCloudPlane(cloudDownSample);
-		/*std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> clusters=pointCloud.euclideanClusterExtract(cloudDownSample);
-		switch(key)
-		{
-		case '0':
-		mode=0;
-		break;
-		case '1':
-		mode=1;
-		break;
-		case '2':
-		mode=2;
-		break;
-		case '3':
-		mode=3;
-		break;
-		case '4':
-		mode=4;
-		break;
-		case '5':
-		mode=5;
-		break;
-		case '6':
-		mode=6;
-		break;
-		default:
-		break;
-		}
-		switch(mode)
-		{
-		case 0:
-		cloudViewer.showCloud(cloudDownSample);
-		break;
-		case 1:
-		if(clusters.size()>=1)
-		cloudViewer.showCloud(clusters[0]);
-		break;
-		case 2:
-		if(clusters.size()>=2)
-		cloudViewer.showCloud(clusters[1]);
-		break;
-		case 3:
-		if(clusters.size()>=3)
-		cloudViewer.showCloud(clusters[2]);
-		break;
-		case 4:	
-		if(clusters.size()>=4)
-		cloudViewer.showCloud(clusters[3]);
-		break;
-		case 5:
-		if(clusters.size()>=5)
-		cloudViewer.showCloud(clusters[4]);
-		break;
-		case 6:
-		if(clusters.size()>=6)
-		cloudViewer.showCloud(clusters[5]);
-		break;
-		default:
-		break;
-		}*/
-
-
-
-
-
-
-
-
-
+		
 	}
 }
 
