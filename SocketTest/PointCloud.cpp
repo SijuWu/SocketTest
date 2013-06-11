@@ -1240,62 +1240,101 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 		 std::cout<<"000000000000000000000"<<std::endl;
 	 }*/
 
-	/* pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
 	 Eigen::Vector4f handCenter;
 	 
+	 //////////method 1
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);
-	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);
-	 palm->points.swap(palmCloud->points);
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,50,&searchCenter);//30,45
+	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,50,&searchCenter);//30,45
+
+	  
+	/* palm->points.swap(palmCloud->points);
 	 digits->points.swap(digitsCloud->points);*/
+	  ///////////////////////////////
+	  std::vector<int> inds,inds2,inds3;
+	  std::vector<int> searchinds;
+	  pcl::PointCloud<pcl::PointXYZ> potentialPoints=*digitsCloud;
+	  SplitCloud2 sc2(potentialPoints,tol);
+	  inds2.resize(potentialPoints.points.size(),-1);
 
-	 double t1,t2,t3;
-	 std::vector<int> inds,inds2,inds3;
-	 std::vector<int> searchinds;
-	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
-	 SplitCloud2 sc2(handPoints,tol);
-	 inds2.resize(handPoints.points.size(),-1);
-
-	 int min=9999;
-	 int max=0;
-
-	 int label;
-
-	 for(int i=0;i<handPoints.points.size();++i)
-	 {
-		 if(inds2[i]==0)
+	  int label;
+	  for(int i=0;i<potentialPoints.points.size();++i)
+	  {
+		  if(inds2[i]==0)
 			 continue;
-		 sc2.NNN(&handPoints.points[i],searchinds,tol,false);
-
-		 if(searchinds.size()>max)
-			 max=searchinds.size();
-		 if(searchinds.size()<min)
-			 min=searchinds.size();
-		 if(searchinds.size()>(65))
+		 sc2.NNN(&potentialPoints.points[i],searchinds,tol,false);
+		 if(searchinds.size()>65)
 		 {
 			 inds.push_back(i);
 
-			 if(searchinds.size()>(80))
+			 if(searchinds.size()>80)//80//tol=20
 				 label=0;
 			 else 
 				 label=1;
 			 for(int j=0;j<searchinds.size();++j)
 				 inds2[searchinds[j]]=label;
 		 }
-	 }
+	  }
 
-	 for(int i=0;i<handPoints.points.size();++i)
-	 {
-		 if(inds2[i]==-1)
-			 inds3.push_back(i);
-	 }
-	/* std::cout<<max<<std::endl;*/
-	/* std::cout<<min<<std::endl;
-	 std::cout<<"next"<<std::endl;*/
+	  for(int i=0;i<potentialPoints.points.size();++i)
+	  {
+		  if(inds2[i]==-1)
+			  inds3.push_back(i);
+	  }
 
-	 getSubCloud(handWithOutArm,inds,palm,true);
-	 getSubCloud(handWithOutArm,inds3,digits,true);
+	  getSubCloud(digitsCloud,inds,palm,true);
+	  getSubCloud(digitsCloud,inds3,digits,true);
+
+
+	 //////////method 2
+	// double t1,t2,t3;
+	// std::vector<int> inds,inds2,inds3;
+	// std::vector<int> searchinds;
+	// //pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	// SplitCloud2 sc2(handPoints,tol);
+	// inds2.resize(handPoints.points.size(),-1);
+
+	// int min=9999;
+	// int max=0;
+
+	// int label;
+
+	// for(int i=0;i<handPoints.points.size();++i)
+	// {
+	//	 if(inds2[i]==0)
+	//		 continue;
+	//	 sc2.NNN(&handPoints.points[i],searchinds,tol,false);
+
+	//	 if(searchinds.size()>max)
+	//		 max=searchinds.size();
+	//	 if(searchinds.size()<min)
+	//		 min=searchinds.size();
+	//	 if(searchinds.size()>80)//65//tol=20
+	//	 {
+	//		 inds.push_back(i);
+
+	//		 if(searchinds.size()>100)//80//tol=20
+	//			 label=0;
+	//		 else 
+	//			 label=1;
+	//		 for(int j=0;j<searchinds.size();++j)
+	//			 inds2[searchinds[j]]=label;
+	//	 }
+	// }
+
+	// for(int i=0;i<handPoints.points.size();++i)
+	// {
+	//	 if(inds2[i]==-1)
+	//		 inds3.push_back(i);
+	// }
+	///*std::cout<<max<<std::endl;
+	//std::cout<<min<<std::endl;
+	// std::cout<<"next"<<std::endl;*/
+
+	// getSubCloud(handWithOutArm,inds,palm,true);
+	// getSubCloud(handWithOutArm,inds3,digits,true);
 	
  }
 
