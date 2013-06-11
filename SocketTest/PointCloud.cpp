@@ -1317,11 +1317,13 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 		 point.x=initialHand->points[i].x;
 		 point.y=initialHand->points[i].y;
 		 point.z=initialHand->points[i].z;
-		 point.r=0;
-		 point.g=0;
-		 point.b=255;
+		 point.r=red;
+		 point.g=green;
+		 point.b=blue;
+		 point.a=0;
 		 colorCloud->points.push_back(point);
 	 }
 	 colorCloud->width=colorCloud->points.size();
 	 colorCloud->height=1;
+	 return colorCloud;
  }

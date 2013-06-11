@@ -198,21 +198,49 @@ void KinectOpenNI::KinectRun()
 					std::cout<<fingers.size()<<std::endl;
 				}
 
-				/*pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
-				for(int i=0;i<rightHandCloud->points.size();++i)
+			
+			/*	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand=pointCloud.getColorPointCloud(rightHandCloud,0,0,255);*/
+					pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
+				std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
+				for(int i=0;i<fingers.size();++i)
 				{
-					pcl::PointXYZRGBA point;
-					point.x=rightHandCloud->points[i].x;
-					point.y=rightHandCloud->points[i].y;
-					point.z=rightHandCloud->points[i].z;
-					point.r=0;
-					point.g=0;
-					point.b=255;
-					colorHand->points.push_back(point);
+					switch(i)
+					{
+					case 0:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,0));
+						break;
+					case 1:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,0));
+						break;
+					case 2:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,0,255));
+						break;
+					case 3:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,0));
+						break;
+					case 4:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,255));
+						break;
+					case 5:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,255));
+						break;
+					case 6:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
+						break;
+					}
+				}
+
+				for(int i=0;i<colorFingers.size();++i)
+				{
+					for(int j=0;j<colorFingers[i]->points.size();++j)
+					{
+						colorHand->points.push_back(colorFingers[i]->points[j]);
+					}
 				}
 				colorHand->width=colorHand->points.size();
-				colorHand->height=1;*/
-				pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand=pointCloud.getColorPointCloud(rightHandCloud,0,0,255);
+				colorHand->height=1;
+				colorHand->resize(colorHand->width);
+
 				cloudViewer.showCloud(colorHand);
 				/*if(key=='0')
 					mode=0;
