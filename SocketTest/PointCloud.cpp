@@ -1215,6 +1215,7 @@ void PointCloud::getEigens(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int han
 
 	handPoints[0]=centroid;
 	handPoints[1]=centroid+direction;
+	handDirection=direction;
 }
 
 void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fcentroid,Eigen::Vector4f &dir ){
@@ -1365,4 +1366,81 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	 colorCloud->width=colorCloud->points.size();
 	 colorCloud->height=1;
 	 return colorCloud;
+ }
+
+ double PointCloud::checkFinger(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
+ {
+	 Eigen::Vector4f centroid;
+	 Eigen::Vector4f direction;
+	 Eigen::Vector3f eigen_values;
+	 Eigen::Matrix3f eigen_vectors;
+     Eigen::Matrix3f cov;
+	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 pcl::compute3DCentroid(finger,centroid);
+	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 direction(0)=eigen_vectors (0, 2);
+	 direction(1)=eigen_vectors (1, 2);
+	 direction(2)=eigen_vectors (2, 2);
+	 flipvec(handPoints[0],centroid,direction);
+	 
+	
+	 double cos=direction.dot(handDirection);
+	 return cos;
+	/*if(cos>0)
+		return true;
+	else
+		return false;
+ }*/
+ }
+
+ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getFingerLine(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
+ {
+	 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLine(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	 Eigen::Vector4f centroid;
+	 Eigen::Vector4f direction;
+	 Eigen::Vector3f eigen_values;
+	 Eigen::Matrix3f eigen_vectors;
+	 Eigen::Matrix3f cov;
+	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 pcl::compute3DCentroid(finger,centroid);
+	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 direction(0)=eigen_vectors (0, 2);
+	 direction(1)=eigen_vectors (1, 2);
+	 direction(2)=eigen_vectors (2, 2);
+	 flipvec(handPoints[0],centroid,direction);
+
+	 pcl::PointXYZRGBA fingerCenter;
+	 fingerCenter.x=centroid(0);
+	 fingerCenter.y=centroid(1);
+	 fingerCenter.z=centroid(2);
+	 fingerCenter.r=100;
+	 fingerCenter.g=50;
+	 fingerCenter.b=200;
+	 fingerLine->points.push_back(fingerCenter);
+
+	 for(int i=0;i<50;++i)
+	 {
+		 pcl::PointXYZRGBA point;
+		 point.x=fingerCenter.x+i*direction(0);
+		 point.y=fingerCenter.y+i*direction(1);
+		 point.z=fingerCenter.z+i*direction(2);
+		 point.r=100;
+		 point.g=50;
+		 point.b=200;
+		 fingerLine->points.push_back(point);
+	 }
+
+	 return fingerLine;
+ }
+
+ Eigen::Vector4f PointCloud::getHandCenter()
+ {
+	 return handPoints[0];
+ }
+
+ Eigen::Vector4f PointCloud::getHandDirection()
+ {
+	 return handDirection;
  }

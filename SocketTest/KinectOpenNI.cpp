@@ -224,6 +224,13 @@ void KinectOpenNI::KinectRun()
 				std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
 				for(int i=0;i<fingers.size();++i)
 				{
+					/*if(pointCloud.checkFinger(fingers[i])==false)
+						continue;*/
+					std::cout<<pointCloud.checkFinger(fingers[i])<<" "<<i<<std::endl;
+					if(i==fingers.size()-1)
+						std::cout<<std::endl;
+					if(std::abs(pointCloud.checkFinger(fingers[i]))<0.5)
+						continue;
 					switch(i)
 					{
 					case 0:
@@ -250,6 +257,8 @@ void KinectOpenNI::KinectRun()
 					}
 				}
 
+			
+
 				for(int i=0;i<colorFingers.size();++i)
 				{
 					for(int j=0;j<colorFingers[i]->points.size();++j)
@@ -257,6 +266,39 @@ void KinectOpenNI::KinectRun()
 						colorHand->points.push_back(colorFingers[i]->points[j]);
 					}
 				}
+				//////////Add center and direction line
+				pcl::PointXYZRGBA handCenter;
+				handCenter.x=pointCloud.getHandCenter()(0);
+				handCenter.y=pointCloud.getHandCenter()(1);
+				handCenter.z=pointCloud.getHandCenter()(2);
+				handCenter.r=100;
+				handCenter.g=50;
+				handCenter.b=200;
+				colorHand->points.push_back(handCenter);
+
+				for(int i=0;i<50;++i)
+				{
+					pcl::PointXYZRGBA point;
+					point.x=handCenter.x+i*pointCloud.getHandDirection()(0);
+					point.y=handCenter.y+i*pointCloud.getHandDirection()(1);
+					point.z=handCenter.z+i*pointCloud.getHandDirection()(2);
+					point.r=100;
+					point.g=50;
+					point.b=200;
+					colorHand->points.push_back(point);
+				}
+
+				/*for(int i=0;i<fingers.size();++i)
+				{
+					pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLineCloud=pointCloud.getFingerLine(fingers[i]);
+					for(int j=0;j<fingerLineCloud->points.size();++j)
+					{
+						colorHand->points.push_back(fingerLineCloud->points[j]);
+					}
+				}*/
+
+				////////////////
+
 				colorHand->width=colorHand->points.size();
 				colorHand->height=1;
 				colorHand->resize(colorHand->width);
