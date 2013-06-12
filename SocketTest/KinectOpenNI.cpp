@@ -155,7 +155,7 @@ void KinectOpenNI::KinectRun()
 			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialHead=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,100.0f,&head);
 			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr potentialLeftHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,100.0f,&leftHand);
 			
-			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialRightHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,200.0f,&rightHand);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialRightHand=pointCloud.searchNeighbourKdTreeRadius(cloudDownSample,200.0f,&rightHand);//200
 
 			
 			
@@ -195,7 +195,7 @@ void KinectOpenNI::KinectRun()
 				if(digits->points.size()!=0)
 				{
 					fingers=pointCloud.segFingers(digits,7,20);//5,20
-					std::cout<<fingers.size()<<std::endl;
+					//std::cout<<fingers.size()<<std::endl;
 				}
 
 			
@@ -226,11 +226,16 @@ void KinectOpenNI::KinectRun()
 				{
 					/*if(pointCloud.checkFinger(fingers[i])==false)
 						continue;*/
-					std::cout<<pointCloud.checkFinger(fingers[i])<<" "<<i<<std::endl;
-					if(i==fingers.size()-1)
-						std::cout<<std::endl;
-					if(std::abs(pointCloud.checkFinger(fingers[i]))<0.5)
-						continue;
+					
+				
+					/*if(pointCloud.checkFinger(fingers[i])<0.86)
+						continue;*/
+					double distance=pointCloud.checkFingerDistance(fingers[i]);
+					if(distance<70)
+					continue;
+						std::cout<<distance<<" "<<i<<std::endl;
+				    std::cout<<std::endl;
+
 					switch(i)
 					{
 					case 0:
@@ -255,6 +260,9 @@ void KinectOpenNI::KinectRun()
 						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
 						break;
 					}
+					
+
+					
 				}
 
 			
@@ -288,14 +296,17 @@ void KinectOpenNI::KinectRun()
 					colorHand->points.push_back(point);
 				}
 
-				/*for(int i=0;i<fingers.size();++i)
+				for(int i=0;i<fingers.size();++i)
 				{
+					double distance=pointCloud.checkFingerDistance(fingers[i]);
+					if(distance<70)
+					continue;
 					pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLineCloud=pointCloud.getFingerLine(fingers[i]);
 					for(int j=0;j<fingerLineCloud->points.size();++j)
 					{
 						colorHand->points.push_back(fingerLineCloud->points[j]);
 					}
-				}*/
+				}
 
 				////////////////
 
@@ -311,7 +322,7 @@ void KinectOpenNI::KinectRun()
 				}
 				if(mode==1)
 				{
-					cloudViewer.showCloud(colorHand);
+					cloudViewer.showCloud(rightHandCloud);
 				}
 				if(mode==2)
 				{
@@ -319,10 +330,12 @@ void KinectOpenNI::KinectRun()
 				}
 				if(mode==3)
 				{
-					cloudViewer.showCloud(rightHandCloud);
+					cloudViewer.showCloud(colorHand);
 				}
 				if(mode==4)
-				{}
+				{
+					cloudViewer.showCloud(potentialRightHand);
+				}
 				if(mode==5)
 				{}
 				if(mode==6)

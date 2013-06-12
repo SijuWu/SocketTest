@@ -807,7 +807,7 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::P
 	NNN(cloud,&pt2,inds2,100);
 
 	std::vector<int> temp;
-	NNN(cloud,&pt2,temp,150);
+	NNN(cloud,&pt2,temp,150);//150
 	if(!(findNearbyPts(cloud,temp,nearcent1)))
 	return false;
 
@@ -1247,8 +1247,8 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	 //////////method 1
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,50,&searchCenter);//30,45
-	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,50,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);//30,45
+	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);//30,45
 
 	  
 	/* palm->points.swap(palmCloud->points);
@@ -1266,11 +1266,11 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 		  if(inds2[i]==0)
 			 continue;
 		 sc2.NNN(&potentialPoints.points[i],searchinds,tol,false);
-		 if(searchinds.size()>65)
+		 if(searchinds.size()>75)
 		 {
 			 inds.push_back(i);
 
-			 if(searchinds.size()>80)//80//tol=20
+			 if(searchinds.size()>90)//80//tol=20
 				 label=0;
 			 else 
 				 label=1;
@@ -1368,7 +1368,7 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	 return colorCloud;
  }
 
- double PointCloud::checkFinger(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
+ double PointCloud::checkFingerAngle(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
  {
 	 Eigen::Vector4f centroid;
 	 Eigen::Vector4f direction;
@@ -1394,6 +1394,37 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
  }*/
  }
 
+ double PointCloud::checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
+ {
+	 Eigen::Vector4f centroid;
+	 Eigen::Vector4f direction;
+	 Eigen::Vector3f eigen_values;
+	 Eigen::Matrix3f eigen_vectors;
+     Eigen::Matrix3f cov;
+	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 pcl::compute3DCentroid(finger,centroid);
+	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 direction(0)=eigen_vectors (0, 2);
+	 direction(1)=eigen_vectors (1, 2);
+	 direction(2)=eigen_vectors (2, 2);
+	 flipvec(handPoints[0],centroid,direction);
+
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr neighbour=searchNeighbourKdTreeKNeighbour(fingerCloud,1,&pcl::PointXYZ(0,0,0));
+	 if(neighbour->points.size()==0)
+		 return 0;
+	 Eigen::Vector4f nearestPoint;
+	 nearestPoint(0)=neighbour->points[0].x;
+	 nearestPoint(1)=neighbour->points[0].y;
+	 nearestPoint(2)=neighbour->points[0].z;
+	 Eigen::Vector4f distanceVector=nearestPoint-handPoints[0];
+	 double distance=distanceVector(0)*distanceVector(0)+distanceVector(1)*distanceVector(1)+distanceVector(2)*distanceVector(2);
+	 distance=std::pow(distance,0.5);
+	 return distance;
+	/* Eigen::Vector4f distanceVector=centroid-handPoints[0];
+	 return distanceVector.norm();*/
+ }
+
  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getFingerLine(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
  {
 	 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLine(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -1410,6 +1441,7 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	 direction(1)=eigen_vectors (1, 2);
 	 direction(2)=eigen_vectors (2, 2);
 	 flipvec(handPoints[0],centroid,direction);
+
 
 	 pcl::PointXYZRGBA fingerCenter;
 	 fingerCenter.x=centroid(0);

@@ -90,7 +90,8 @@ public:
     void radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int nnthresh,double tol,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr palm,pcl::PointCloud<pcl::PointXYZ>::Ptr digits);
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> segFingers(pcl::PointCloud<pcl::PointXYZ>::Ptr digits,double clustertol,int mincluster);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getColorPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr initialHand,int red,int green,int blue);
-	double checkFinger(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
+	double checkFingerAngle(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
+	double checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getFingerLine(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
 	Eigen::Vector4f getHandCenter();
 	Eigen::Vector4f getHandDirection();
