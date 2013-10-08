@@ -304,6 +304,67 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudPlane(pcl::PointClou
 	return cloud_p;
 }
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudPlaneConvexHull(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double distanceThreshold)
+{
+	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+	pcl::SACSegmentation<pcl::PointXYZ> seg;
+	seg.setOptimizeCoefficients(true);
+	seg.setModelType(pcl::SACMODEL_PLANE);
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setDistanceThreshold(distanceThreshold);//10
+
+	seg.setInputCloud(cloudSource);
+	seg.segment(*inliers,*coefficients);
+
+	pcl::ProjectInliers<pcl::PointXYZ>proj;
+	proj.setModelType(pcl::SACMODEL_PLANE);
+	proj.setIndices(inliers);
+	proj.setInputCloud (cloudSource);
+	proj.setModelCoefficients(coefficients);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_projected(new pcl::PointCloud<pcl::PointXYZ>);
+	proj.filter(*cloud_projected);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::ConvexHull<pcl::PointXYZ> chull;
+	chull.setInputCloud(cloud_projected);
+	chull.reconstruct(*cloud_hull);
+
+	return cloud_hull;
+
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudPlaneConcaveHull(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double distanceThreshold,double alpha)
+{
+	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+	pcl::SACSegmentation<pcl::PointXYZ> seg;
+	seg.setOptimizeCoefficients(true);
+	seg.setModelType(pcl::SACMODEL_PLANE);
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setDistanceThreshold(distanceThreshold);//10
+
+	seg.setInputCloud(cloudSource);
+	seg.segment(*inliers,*coefficients);
+
+	pcl::ProjectInliers<pcl::PointXYZ>proj;
+	proj.setModelType(pcl::SACMODEL_PLANE);
+	proj.setIndices(inliers);
+	proj.setInputCloud (cloudSource);
+	proj.setModelCoefficients(coefficients);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_projected(new pcl::PointCloud<pcl::PointXYZ>);
+	proj.filter(*cloud_projected);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::ConcaveHull<pcl::PointXYZ> chull;
+	chull.setInputCloud(cloud_projected);
+	chull.setAlpha(alpha);//100
+	chull.reconstruct(*cloud_hull);
+
+	return cloud_hull;
+
+}
+
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize)
 {
 	getCloudPlane(cloudSource);
@@ -808,8 +869,10 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::P
 
 	std::vector<int> temp;
 	NNN(cloud,&pt2,temp,150);//150
-	if(!(findNearbyPts(cloud,temp,nearcent1)))
-	return false;
+	/*if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;*/
+
+	findNearbyPts(cloud,temp,nearcent1);
 
 	pcl::compute3DCentroid(handCloud,inds2,centroid1);
 	pt2.x=centroid1(0);
@@ -1339,6 +1402,82 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	
  }
 
+
+ void PointCloud::covarianceFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,double tol,int hand, pcl::PointCloud<pcl::PointXYZ>::Ptr palm, pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
+ {
+	 vector<int> tempinds;
+	 if(hand==0)
+		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
+	 else
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
+
+	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 Eigen::Vector4f handCenter;
+
+	 pcl::compute3DCentroid(handPoints,handCenter);
+	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);//30,45
+
+	 std::vector<int> inds,inds2,inds3;
+	 std::vector<int> searchinds;
+	 pcl::PointCloud<pcl::PointXYZ> potentialPoints=*digitsCloud;
+	 SplitCloud2 sc2(potentialPoints,tol);
+	 inds2.resize(potentialPoints.points.size(),-1);
+
+	 int label;
+	 for(int i=0;i<potentialPoints.points.size();++i)
+	 {
+		 if(inds2[i]==0)
+			 continue;
+		 sc2.NNN(&potentialPoints.points[i],searchinds,tol,false);
+
+		 pcl::PointCloud<pcl::PointXYZ> neighbourCloud;
+		 for(int j=0;j<searchinds.size();++j)
+		 {
+			 neighbourCloud.points.push_back(potentialPoints.points[searchinds[j]]);
+		 }
+
+		 Eigen::Vector4f direction;
+		 Eigen::Vector3f eigen_values;
+		 Eigen::Matrix3f eigen_vectors;
+		 Eigen::Matrix3f cov;
+		 Eigen::Vector4f centroid;
+		 pcl::compute3DCentroid(neighbourCloud,centroid);
+		 pcl::computeCovarianceMatrixNormalized(neighbourCloud,centroid,cov);
+		 pcl::eigen33(cov,eigen_vectors,eigen_values);
+		 direction(0)=eigen_vectors (0, 2);
+		 direction(1)=eigen_vectors (1, 2);
+		 direction(2)=eigen_vectors (2, 2);
+
+		 double dotValue=direction.dot(handDirection);
+
+		 if(dotValue<0.5)
+		 {
+			 inds.push_back(i);
+
+			/* if(dotValue<0.5)
+				 label=0;
+			 else*/
+				 label=1;
+			 for(int j=0;j<searchinds.size();++j)
+				 inds2[searchinds[j]]=label;
+		 }
+	 }
+
+	 for(int i=0;i<potentialPoints.points.size();++i)
+	 {
+		 if(inds2[i]==-1)
+			 inds3.push_back(i);
+	 }
+
+	 getSubCloud(digitsCloud,inds,palm,true);
+	 getSubCloud(digitsCloud,inds3,digits,true);
+ }
+
  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::segFingers(pcl::PointCloud<pcl::PointXYZ>::Ptr digits,double clustertol,int mincluster)
  {
 	 /*if(digits->points.size()==0)
@@ -1475,4 +1614,20 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
  Eigen::Vector4f PointCloud::getHandDirection()
  {
 	 return handDirection;
+ }
+
+ void PointCloud::setArmCenter(pcl::PointXYZ* armCenter,int hand)
+ {
+	 if(hand==0)
+	 {
+		 arm_center[0](0)=(*armCenter).x;
+		 arm_center[0](1)=(*armCenter).y;
+		 arm_center[0](2)=(*armCenter).z;
+	 }
+	 if(hand==1)
+	 {
+		 arm_center[1](0)=(*armCenter).x;
+		 arm_center[1](1)=(*armCenter).y;
+		 arm_center[1](2)=(*armCenter).z;
+	 }
  }

@@ -14,6 +14,9 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/surface/concave_hull.h>
+#include <pcl/surface/convex_hull.h>
+#include <pcl/filters/project_inliers.h>
 #include <Eigen/StdVector>
 #include <stdlib.h>  
 #include "SplitCloud2.h"
@@ -40,6 +43,9 @@ public:
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr getCloudPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getCloudPlane(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr getCloudPlaneConcaveHull(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double distanceThreshold,double alpha);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr getCloudPlaneConvexHull(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double distanceThreshold);
 	
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize);
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize);
@@ -88,6 +94,7 @@ public:
 	void getEigens(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int hand);//0right 1 left
 	void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fcentroid,Eigen::Vector4f &dir );
     void radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int nnthresh,double tol,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr palm,pcl::PointCloud<pcl::PointXYZ>::Ptr digits);
+	void covarianceFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,double tol,int hand, pcl::PointCloud<pcl::PointXYZ>::Ptr palm, pcl::PointCloud<pcl::PointXYZ>::Ptr digits);
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> segFingers(pcl::PointCloud<pcl::PointXYZ>::Ptr digits,double clustertol,int mincluster);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getColorPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr initialHand,int red,int green,int blue);
 	double checkFingerAngle(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
@@ -95,7 +102,7 @@ public:
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getFingerLine(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud);
 	Eigen::Vector4f getHandCenter();
 	Eigen::Vector4f getHandDirection();
-	
+	void setArmCenter(pcl::PointXYZ* armCenter,int hand);
 private:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ;
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA;

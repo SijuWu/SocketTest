@@ -9,36 +9,52 @@
 #include "PointCloud.h"
 #include <pcl/visualization/cloud_viewer.h>
 
+#include<pcl/surface/concave_hull.h>
+#include <pcl/filters/project_inliers.h>
 class KinectOpenNI
 {
 public:
 	KinectOpenNI(void);
 	~KinectOpenNI(void);
-	void KinectRun();
+	xn::SkeletonCapability KinectRun();
+	//void KinectRun();
 	void KinectClose();
-
-
+	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
+	const XnDepthPixel* getDepthData();
+	const XnUInt8* getImageData();  
+	bool checkUser(xn::SkeletonCapability* skeletonCap);
+	void displayImage();
+	void kinectUpdate();
 private:
 	void CheckOpenNIError( XnStatus result, std::string status ); 
-	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
-	void displayImage();
+	
 	//bool checkUser(xn::SkeletonCapability* skeletonCap, pcl::PointXYZRGBA* rightHand);
-	bool checkUser(xn::SkeletonCapability* skeletonCap/*, pcl::PointXYZRGBA* rightHand*/);
+	
 	XnStatus result;  
 	xn::Context context;   
+	//Depth image data
     xn::DepthMetaData depthMD;  
+	//Color image data
     xn::ImageMetaData imageMD;  
+	//Depth data generator
 	xn::DepthGenerator depthGenerator; 
+	//Color data generator
 	xn::ImageGenerator imageGenerator;  
+	//User data generator
 	xn::UserGenerator userGenerator;
+	//Output image mode
 	XnMapOutputMode mapMode;  
-	//xn::SkeletonCapability skeletonCap=NULL;
+
 	XnCallbackHandle calibCBHandle;
 	XnCallbackHandle poseCBHandle; 
 	
 	PointCloud pointCloud;
-	cv::Mat depthImage;
-	cv::Mat colorImage;
+
+	//Matrix of depth image
+cv::Mat depthImage;
+//Matrix of color image
+cv::Mat colorImage;
+
 	char key;
     int mode;
 
@@ -52,6 +68,8 @@ private:
 	pcl::PointXYZ head;
 	pcl::PointXYZ leftHand;
 	pcl::PointXYZ rightHand;
+	pcl::PointXYZ leftElbow;
+	pcl::PointXYZ rightElbow;
 
 	double rightHandX;
 	double rightHandY;
