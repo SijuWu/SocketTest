@@ -22,8 +22,8 @@ public:
 	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
 	const XnDepthPixel* getDepthData();
 	const XnUInt8* getImageData();  
-	bool checkUser(xn::SkeletonCapability* skeletonCap);
-	void displayImage();
+	bool checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorImage);
+	//void displayImage();
 	void kinectUpdate();
 private:
 	void CheckOpenNIError( XnStatus result, std::string status ); 
@@ -48,14 +48,14 @@ private:
 	XnCallbackHandle calibCBHandle;
 	XnCallbackHandle poseCBHandle; 
 	
-	PointCloud pointCloud;
+	//PointCloud pointCloud;
 
-	//Matrix of depth image
-cv::Mat depthImage;
-//Matrix of color image
-cv::Mat colorImage;
+//	//Matrix of depth image
+//cv::Mat depthImage;
+////Matrix of color image
+//cv::Mat colorImage;
 
-	char key;
+	//char key;
     int mode;
 
 	/*pcl::PointXYZRGBA* head;

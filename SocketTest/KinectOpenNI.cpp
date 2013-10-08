@@ -420,7 +420,7 @@ void KinectOpenNI::getCVImage(cv::Mat* depthImage,cv::Mat* colorImage)
 //}
 
 
-bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
+bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorImage)
 {
 	XnUInt16 userCounts=userGenerator.GetNumberOfUsers();
 	bool detected=false;
@@ -451,9 +451,9 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 					CvPoint startpoint = cvPoint(skelPointsOut[startSkelPoints[d]-1].X,skelPointsOut[startSkelPoints[d]-1].Y);  
 					CvPoint endpoint = cvPoint(skelPointsOut[endSkelPoints[d]-1].X,skelPointsOut[endSkelPoints[d]-1].Y);  
 
-					/*cv::circle(colorImage,startpoint,3,CV_RGB(0,0,255),12);
+					cv::circle(colorImage,startpoint,3,CV_RGB(0,0,255),12);
 					cv::circle(colorImage,endpoint,3,CV_RGB(0,0,255),12);
-					cv::line(colorImage,startpoint,endpoint,CV_RGB(0,0,255),4);*/
+					cv::line(colorImage,startpoint,endpoint,CV_RGB(0,0,255),4);
 				}  
 
 				float F = 0.0019047619f;
@@ -473,9 +473,9 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 		}
 	}
 	
-	const XnDepthPixel* pDepth=depthMD.Data();
+	/*const XnDepthPixel* pDepth=depthMD.Data();
 	const XnUInt8* pColor=imageMD.Data();
-	pointCloud.createCloudXYZ(pDepth);
+	pointCloud.createCloudXYZ(pDepth);*/
 	/*pointCloud.createCloudXYZRGBA(pDepth,pColor);*/
 
 	if(detected==true)
@@ -489,13 +489,13 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap)
 	}
 }
 
-void KinectOpenNI::displayImage()
-{
-	cvNamedWindow("depth",1);  
-		cvNamedWindow("image",1);
-
-		cv::imshow("depth",depthImage);
-		cv::imshow("image",colorImage);
-
-		key=cv::waitKey(20);
-}
+//void KinectOpenNI::displayImage()
+//{
+//	cvNamedWindow("depth",1);  
+//		cvNamedWindow("image",1);
+//
+//		cv::imshow("depth",depthImage);
+//		cv::imshow("image",colorImage);
+//
+//		key=cv::waitKey(20);
+//}

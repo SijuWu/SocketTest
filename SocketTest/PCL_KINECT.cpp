@@ -27,7 +27,8 @@ int main( int argc, char** argv )
 		kinectOpenNI.kinectUpdate();
 		kinectOpenNI.getCVImage(&depthImage,&colorImage);
 
-		userFound=kinectOpenNI.checkUser(&skeletonCap);
+		userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
+
 		pointCloud.createCloudXYZ(kinectOpenNI.getDepthData());
 		cloudViewer.showCloud(pointCloud.getCloudXYZ());
 
