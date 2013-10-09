@@ -17,7 +17,6 @@ public:
 	KinectOpenNI(void);
 	~KinectOpenNI(void);
 	xn::SkeletonCapability KinectRun();
-	//void KinectRun();
 	void KinectClose();
 	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
 	const XnDepthPixel* getDepthData();

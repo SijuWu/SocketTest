@@ -2,6 +2,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include<pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 #include<pcl/octree/octree.h>
 #include <XnCppWrapper.h>
 #include <pcl/filters/voxel_grid.h>
@@ -21,14 +22,25 @@
 #include <stdlib.h>  
 #include "SplitCloud2.h"
 
+#include <iostream>
+#include <boost/thread/thread.hpp>
+#include <pcl/common/common_headers.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/console/parse.h>
+
+
 class PointCloud
 {
 public:
 	PointCloud(void);
 	~PointCloud(void);
+	//Create the point cloud without color.
 	void createCloudXYZ( const XnDepthPixel* pDepth);
+	//Create the point cloud with color.
 	void createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* pColor);
+	//Get the point cloud without color.
 	pcl::PointCloud<pcl::PointXYZ>::Ptr getCloudXYZ();
+	//Get the point cloud with color.
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr getCloudXYZRGBA();
 	
 	/*template<typename PointT> pcl::PointCloud<PointT>::Ptr downSampling(pcl::PointCloud<PointT>::Ptr cloudSource,float xLeafSize,float yLeafSize, float zLeafSize);*/

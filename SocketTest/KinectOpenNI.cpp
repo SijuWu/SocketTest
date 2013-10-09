@@ -115,23 +115,6 @@ xn::SkeletonCapability KinectOpenNI::KinectRun()
 	return skeletonCap;
 }
 
-//void KinectOpenNI::KinectRun()
-//{
-//	//Handle used to 
-//	XnCallbackHandle userCBHandle;
-//	userGenerator.RegisterUserCallbacks(NewUser,LostUser,NULL,userCBHandle);
-//	userGenerator.GetPoseDetectionCap().RegisterToPoseDetected( PoseDetected,&userGenerator, poseCBHandle );  
-//
-//	xn::SkeletonCapability skeletonCap=userGenerator.GetSkeletonCap();
-//	skeletonCap.SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
-//	skeletonCap.RegisterToCalibrationStart( CalibrationStart,&userGenerator, calibCBHandle );  
-//	skeletonCap.RegisterToCalibrationComplete( CalibrationEnd,&userGenerator, calibCBHandle ); 
-//
-//	result = context.StartGeneratingAll();
-//	
-//
-//	
-//}
 
 const XnDepthPixel*KinectOpenNI::getDepthData()
 {

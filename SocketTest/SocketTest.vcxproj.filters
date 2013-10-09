@@ -36,6 +36,15 @@
     <ClInclude Include="SplitCloud2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LeapListener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PCLHand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PCLFinger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +66,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SplitCloud2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LeapListener.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PCLHand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PCLFinger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
