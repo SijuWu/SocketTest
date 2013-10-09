@@ -5,6 +5,8 @@
 #include "PCLHand.h"
 #include "PCLFinger.h"
 #include "SocketClient.h"
+#include "Touch.h"
+using namespace PQ_SDK_MultiTouch;
 
 //Keyboard input
 char key=0;
@@ -24,20 +26,30 @@ Controller controller;
 std::vector<PCLHand*> pclHands;
 //Vector of fingerPoint
 std::vector<PCLFinger*> pclFingers;
-
+//Touch input
+Touch touch;
 int main( int argc, char** argv )  
 {  
-	//Client socket
-	SocketClient client;
-	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
-	bool connection=client.ConnectToHost(8000,"192.168.32.189");
+	int err_code=touch.Init();
+	if(err_code != PQMTE_SUCCESS){
+		cout << "press any key to exit..." << endl;
+		getchar();
+		return 0;
+	}
+	// do other things of your application;
+	cout << "hello world" << endl;
+	//
+	////Client socket
+	//SocketClient client;
+	////bool connection=client.ConnectToHost(8000,"192.168.193.200");
+	//bool connection=client.ConnectToHost(8000,"192.168.1.4");
 
 	//Create KinectOpenNI engine.
 	KinectOpenNI kinectOpenNI;
 	//Run Kinect.
 	xn::SkeletonCapability skeletonCap=kinectOpenNI.KinectRun();
-	//Create point cloud viewer.
-	pcl::visualization::CloudViewer cloudViewer("Simple Cloud Viewer");
+	////Create point cloud viewer.
+	//pcl::visualization::CloudViewer cloudViewer("Simple Cloud Viewer");
 	//Point cloud of Leap data
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr leapCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -52,7 +64,7 @@ int main( int argc, char** argv )
 	////Add event listener to the controller.
 	//controller.addListener(leapListener);
 
-	while(key!=27&&connection==true)
+	while(key!=27/*&&connection==true*/)
 	{
 		/*std::cout << "Frame id: " << controller.frame().id()
 		<< ", timestamp: " << controller.frame().timestamp()
@@ -91,25 +103,25 @@ int main( int argc, char** argv )
 	
 		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()!=0)
 		{
-			send(client.getClientSocket(),"Hand and finger",strlen("Hand and finger"),0);
+			//send(client.getClientSocket(),"Hand and finger",strlen("Hand and finger"),0);
 			std::cout<<"Hand and finger"<<std::endl;
 		}
 
 		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()==0)
 		{
-			send(client.getClientSocket(),"Hand",strlen("Hand"),0);
+			//send(client.getClientSocket(),"Hand",strlen("Hand"),0);
 			std::cout<<"Hand"<<std::endl;
 		}
 
 		if(controller.frame().hands().count()==0&&controller.frame().fingers().count()!=0)
 		{
-			send(client.getClientSocket(),"Finger",strlen("Finger"),0);
+			//send(client.getClientSocket(),"Finger",strlen("Finger"),0);
 			std::cout<<"Finger"<<std::endl;
 		}
 	
 		if(controller.frame().hands().count()==0&&controller.frame().fingers().count()==0)
 		{
-			send(client.getClientSocket(),"None",strlen("None"),0);
+			//send(client.getClientSocket(),"None",strlen("None"),0);
 			std::cout<<"None"<<std::endl;
 		}
 
