@@ -29,8 +29,8 @@ int main( int argc, char** argv )
 {  
 	//Client socket
 	SocketClient client;
-	bool connection=client.ConnectToHost(8000,"192.168.193.200");
-
+	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
+	bool connection=client.ConnectToHost(8000,"192.168.32.189");
 
 	//Create KinectOpenNI engine.
 	KinectOpenNI kinectOpenNI;
@@ -69,7 +69,7 @@ int main( int argc, char** argv )
 		userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
 
 		//Create point cloud for the environment.
-		pointCloud.createCloudXYZ(kinectOpenNI.getDepthData());
+		//pointCloud.createCloudXYZ(kinectOpenNI.getDepthData());
 		//Display the point cloud.
 
 
@@ -80,8 +80,8 @@ int main( int argc, char** argv )
 		{
 			PCLHand hand=PCLHand(&controller.frame().hands()[i]);
 			pclHands.push_back(&hand);
-
-			send(client.getClientSocket(),"Hand",strlen("Hand"),0);
+			//std::cout<<controller.frame().hands()[i].palmPosition();
+			//send(client.getClientSocket(),"Hand",strlen("Hand"),0);
 		}
 		for(int i=0;i<controller.frame().fingers().count();++i)
 		{
@@ -89,7 +89,29 @@ int main( int argc, char** argv )
 			pclFingers.push_back(&finger);
 		}
 	
-		
+		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()!=0)
+		{
+			send(client.getClientSocket(),"Hand and finger",strlen("Hand and finger"),0);
+			std::cout<<"Hand and finger"<<std::endl;
+		}
+
+		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()==0)
+		{
+			send(client.getClientSocket(),"Hand",strlen("Hand"),0);
+			std::cout<<"Hand"<<std::endl;
+		}
+
+		if(controller.frame().hands().count()==0&&controller.frame().fingers().count()!=0)
+		{
+			send(client.getClientSocket(),"Finger",strlen("Finger"),0);
+			std::cout<<"Finger"<<std::endl;
+		}
+	
+		if(controller.frame().hands().count()==0&&controller.frame().fingers().count()==0)
+		{
+			send(client.getClientSocket(),"None",strlen("None"),0);
+			std::cout<<"None"<<std::endl;
+		}
 
 		leapCloud->points.resize(0);
 
@@ -105,7 +127,7 @@ int main( int argc, char** argv )
 
 
 
-		cloudViewer.showCloud(pointCloud.getCloudXYZ());
+		//cloudViewer.showCloud(pointCloud.getCloudXYZ());
 
 		//Display depth and color image.
 		cv::imshow("depth",depthImage);

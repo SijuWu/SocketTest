@@ -109,8 +109,8 @@ xn::SkeletonCapability KinectOpenNI::KinectRun()
 	skeletonCap.RegisterToCalibrationComplete( CalibrationEnd,&userGenerator, calibCBHandle ); 
 
 	result = context.StartGeneratingAll();
-	//Unpdate context
-	context.WaitAnyUpdateAll();
+	////Unpdate context
+	//context.WaitAnyUpdateAll();
 
 	return skeletonCap;
 }
@@ -130,7 +130,7 @@ const XnUInt8* KinectOpenNI::getImageData()
 
 void KinectOpenNI::kinectUpdate()
 {
-	context.WaitAnyUpdateAll();
+	context.WaitAndUpdateAll();
 }
 //void KinectOpenNI::KinectRun()
 //{
