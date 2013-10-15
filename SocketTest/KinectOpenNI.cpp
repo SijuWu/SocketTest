@@ -89,7 +89,7 @@ KinectOpenNI::KinectOpenNI(void)
     result = imageGenerator.SetMapOutputMode( mapMode );  
 
 	// correct view port    
-    depthGenerator.GetAlternativeViewPointCap().SetViewPoint( imageGenerator );   
+    depthGenerator.GetAlternativeViewPointCap().SetViewPoint( imageGenerator ); 
 }
 
 KinectOpenNI::~KinectOpenNI(void)
@@ -410,6 +410,8 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 	if(userCounts>0)
 	{
 		XnUserID* userID=new XnUserID[userCounts];
+		userIDList=userID;
+
 		userGenerator.GetUsers(userID,userCounts);
 		for(int i=0;i<userCounts;i++)
 		{
@@ -424,10 +426,6 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 				}
 				depthGenerator.ConvertRealWorldToProjective(24,skelPointsIn,skelPointsOut);
 				detected=true;
-
-				
-				
-				
 				
 				for(int d=0;d<14;d++)  
 				{  
@@ -471,7 +469,10 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 	return false;
 	}
 }
-
+XnUserID* KinectOpenNI::getUserID()
+{
+	return this->userIDList;
+}
 //void KinectOpenNI::displayImage()
 //{
 //	cvNamedWindow("depth",1);  

@@ -22,6 +22,8 @@ public:
 	const XnDepthPixel* getDepthData();
 	const XnUInt8* getImageData();  
 	bool checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorImage);
+	XnUserID* getUserID();
+	void getUserHead(XnUserID userID, XnPoint3D headPointIn,XnPoint3D headPointOut);
 	//void displayImage();
 	void kinectUpdate();
 private:
@@ -63,7 +65,7 @@ private:
 	/*pcl::PointXYZRGBA head;
 	pcl::PointXYZRGBA leftHand;
 	pcl::PointXYZRGBA rightHand;*/
-
+	XnUserID* userIDList;
 	pcl::PointXYZ head;
 	pcl::PointXYZ leftHand;
 	pcl::PointXYZ rightHand;
