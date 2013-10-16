@@ -5,13 +5,11 @@
 #include "PCLHand.h"
 #include "PCLFinger.h"
 #include "SocketClient.h"
-//#include "Touch.h"
+#include "Touch.h"
+using namespace PQ_SDK_MultiTouch;
 
 
-//using namespace PQ_SDK_MultiTouch;
-
-
-enum DataStruct{Hand=1, Finger=2, Head=3, Touch=4};
+enum DataStruct{Hand=1, Finger=2, Head=3, ScreenTouch=4};
 
 //2D position structure, 8 bytes
 struct Position2D
@@ -75,6 +73,7 @@ public:
 };
 
 //Touch data structure, 21 bytes
+//To add touch state
 struct TouchStruct
 {
 public:
@@ -103,8 +102,8 @@ Controller controller;
 std::vector<PCLHand*> pclHands;
 //Vector of fingerPoint
 std::vector<PCLFinger*> pclFingers;
-////Touch input
-//Touch touch;
+//Touch input
+Touch touch;
 
 int frameCount=0;
 const int handStructSize=57;
@@ -240,19 +239,19 @@ void headConversion(HeadStruct headStruct, char * headByte)
 
 int main( int argc, char** argv )  
 {  
-	/*int err_code=touch.Init();
+	int err_code=touch.Init();
 	if(err_code != PQMTE_SUCCESS){
 	cout << "press any key to exit..." << endl;
 	getchar();
 	return 0;
-	}*/
+	}
 	// do other things of your application;
 	cout << "hello world" << endl;
 	//
 	//Client socket
 	SocketClient client;
 	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
-	bool connection=client.ConnectToHost(8000,"192.168.1.5");
+	bool connection=client.ConnectToHost(8000,"192.168.1.2");
 
 	//Create KinectOpenNI engine.
 	KinectOpenNI kinectOpenNI;
@@ -287,6 +286,92 @@ int main( int argc, char** argv )
 		//Check if any user is detected.
 		userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
 
+		frameCount++;
+
+		char headByte[37];
+		char rightHandByte[51];
+		char leftHandByte[51];
+		char touchesByte[210];
+		HeadStruct headStruct;
+		headStruct.structType=DataStruct::Head;
+		headStruct.valid=false;
+		HandStruct rightHandStruct;
+		rightHandStruct.valid=false;
+		rightHandStruct.structType=DataStruct::Hand;
+		HandStruct leftHandStruct;
+		leftHandStruct.valid=false;
+		leftHandStruct.structType=DataStruct::Hand;
+
+		TouchStruct touchStruct[10];
+		for(int i=0;i<10;++i)
+		{
+			touchStruct[i].structType=DataStruct::ScreenTouch;
+			touchStruct[i].valid=false;
+			touchStruct[i].touchId=-1;
+			touchStruct[i].frame=frameCount;
+			touchStruct[i].touchPosition.x=-1;
+			touchStruct[i].touchPosition.y=-1;
+		}
+
+		std::vector<TouchPoint> pointList=touch.getTouchPointList();
+
+		int resolutionX=touch.getResolutionX();
+		int resolutionY=touch.getResolutionY();
+
+		for(int i=0;i<pointList.size();++i)
+		{
+			touchStruct[i].valid=true;
+			touchStruct[i].touchId=pointList[i].id;
+			touchStruct[i].touchPosition.x=((float)pointList[i].x/(float)resolutionX);
+			touchStruct[i].touchPosition.y=((float)pointList[i].y/(float)resolutionY);
+			
+		}
+		
+		for(int i=0;i<10;++i)
+		{
+			char touchByte[21];
+			touchConversion(touchStruct[i],touchByte);
+			memmove(&touchesByte[i*21],touchByte,21);
+		}
+		
+
+	//touch.getTouchPointList();
+		if(userFound==true)
+		{
+			headStruct.headId=kinectOpenNI.getHeadId();
+			headStruct.frame=frameCount;
+			headStruct.headPosition.x=kinectOpenNI.getHead().x;
+			headStruct.headPosition.y=kinectOpenNI.getHead().y;
+			headStruct.headPosition.z=kinectOpenNI.getHead().z;
+			headStruct.valid=true;
+			
+
+			rightHandStruct.handId=kinectOpenNI.getRightHandId();
+			leftHandStruct.handId=kinectOpenNI.getLeftHandId();
+			rightHandStruct.frame=frameCount;
+			leftHandStruct.frame=frameCount;
+			rightHandStruct.handPosition.x=kinectOpenNI.getRightHand().x;
+			rightHandStruct.handPosition.y=kinectOpenNI.getRightHand().y;
+			rightHandStruct.handPosition.z=kinectOpenNI.getRightHand().z;
+			leftHandStruct.handPosition.x=kinectOpenNI.getLeftHand().x;
+			leftHandStruct.handPosition.y=kinectOpenNI.getLeftHand().y;
+			leftHandStruct.handPosition.z=kinectOpenNI.getLeftHand().z;
+			rightHandStruct.valid=true;
+			leftHandStruct.valid=true;
+			
+		}
+		headConversion(headStruct,headByte);
+		handConversion(rightHandStruct,rightHandByte);
+		handConversion(leftHandStruct,leftHandByte);
+
+		char dataToSend[361];
+		memmove(dataToSend,headByte,37);
+		memmove(&dataToSend[37],rightHandByte,57);
+		memmove(&dataToSend[94],leftHandByte,57);
+		memmove(&dataToSend[151],touchesByte,210);
+		send(client.getClientSocket(),dataToSend,361,0);
+		
+
 		//Create point cloud for the environment.
 		//pointCloud.createCloudXYZ(kinectOpenNI.getDepthData());
 		//Display the point cloud.
@@ -294,9 +379,9 @@ int main( int argc, char** argv )
 
 		/*pclHands.resize(0);
 		pclFingers.resize(0);*/
-		frameCount++;
 
-		HandStruct testHand;
+
+		/*HandStruct testHand;
 		testHand.structType=DataStruct::Hand;
 		testHand.handId=1;
 		for(int i=0;i<5;++i)
@@ -351,19 +436,19 @@ int main( int argc, char** argv )
 		testTouch.touchPosition.y=-2.2;
 		testTouch.valid=true;
 		char touchByte[21];
-		touchConversion(testTouch,touchByte);
+		touchConversion(testTouch,touchByte);*/
 
-		char dataToSend[156];
+		/*char dataToSend[156];
 		memmove(dataToSend,handByte,57);
 		memmove(&dataToSend[57],fingerByte,41);
 		memmove(&dataToSend[98],headByte,37);
-		memmove(&dataToSend[135],touchByte,21);
-		send(client.getClientSocket(),dataToSend,156,0);
-		
-		
-		
+		memmove(&dataToSend[135],touchByte,21);*/
+		//send(client.getClientSocket(),dataToSend,156,0);
 
-	
+
+
+
+
 
 
 		//for(int i=0;i<controller.frame().hands().count();++i)
