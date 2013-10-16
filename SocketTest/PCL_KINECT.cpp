@@ -239,24 +239,24 @@ void headConversion(HeadStruct headStruct, char * headByte)
 
 int main( int argc, char** argv )  
 {  
-	int err_code=touch.Init();
-	if(err_code != PQMTE_SUCCESS){
-	cout << "press any key to exit..." << endl;
-	getchar();
-	return 0;
-	}
-	// do other things of your application;
-	cout << "hello world" << endl;
+	//int err_code=touch.Init();
+	//if(err_code != PQMTE_SUCCESS){
+	//cout << "press any key to exit..." << endl;
+	//getchar();
+	//return 0;
+	//}
+	//// do other things of your application;
+	//cout << "hello world" << endl;
 	//
 	//Client socket
 	SocketClient client;
-	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
-	bool connection=client.ConnectToHost(8000,"192.168.1.2");
+	bool connection=client.ConnectToHost(8000,"192.168.193.200");
+	//bool connection=client.ConnectToHost(8000,"192.168.1.2");
 
-	//Create KinectOpenNI engine.
-	KinectOpenNI kinectOpenNI;
-	//Run Kinect.
-	xn::SkeletonCapability skeletonCap=kinectOpenNI.KinectRun();
+	////Create KinectOpenNI engine.
+	//KinectOpenNI kinectOpenNI;
+	////Run Kinect.
+	//xn::SkeletonCapability skeletonCap=kinectOpenNI.KinectRun();
 	////Create point cloud viewer.
 	//pcl::visualization::CloudViewer cloudViewer("Simple Cloud Viewer");
 	//Point cloud of Leap data
@@ -267,8 +267,8 @@ int main( int argc, char** argv )
 	//Create color image window.
 	cvNamedWindow("image",1);
 
-	////Add event listener to the controller.
-	//controller.addListener(leapListener);
+	//Add event listener to the controller.
+	controller.addListener(leapListener);
 
 	while(key!=27&&connection==true)
 	{
@@ -279,19 +279,21 @@ int main( int argc, char** argv )
 		<< ", tools: " << controller.frame().tools().count()
 		<< ", gestures: " << controller.frame().gestures().count() << std::endl;*/
 
-		//Update kinect for each frame.
-		kinectOpenNI.kinectUpdate();
-		//Get depth and color image.
-		kinectOpenNI.getCVImage(&depthImage,&colorImage);
-		//Check if any user is detected.
-		userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
+		////Update kinect for each frame.
+		//kinectOpenNI.kinectUpdate();
+		////Get depth and color image.
+		//kinectOpenNI.getCVImage(&depthImage,&colorImage);
+		////Check if any user is detected.
+		//userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
 
 		frameCount++;
 
-		char headByte[37];
-		char rightHandByte[51];
-		char leftHandByte[51];
-		char touchesByte[210];
+		char headByte[headStructSize];
+		char rightHandByte[handStructSize];
+		char leftHandByte[handStructSize];
+		char handsByte[handStructSize*2];
+		char fingersByte[fingerStructSize*10];
+		char touchesByte[touchStructSize*10];
 		HeadStruct headStruct;
 		headStruct.structType=DataStruct::Head;
 		headStruct.valid=false;
@@ -301,6 +303,100 @@ int main( int argc, char** argv )
 		HandStruct leftHandStruct;
 		leftHandStruct.valid=false;
 		leftHandStruct.structType=DataStruct::Hand;
+
+		HandStruct handStruct[2];
+		for(int i=0;i<2;++i)
+		{
+			handStruct[i].structType=DataStruct::Hand;
+			handStruct[i].valid=false;
+			handStruct[i].handId=-1;
+			for(int j=0;j<5;++j)
+			{
+				handStruct[i].fingerIds[j]=-1;
+			}
+			handStruct[i].frame=frameCount;
+			handStruct[i].handPosition.x=-1;
+			handStruct[i].handPosition.y=-1;
+			handStruct[i].handPosition.z=-1;
+			handStruct[i].handOrientation.x=-1;
+			handStruct[i].handOrientation.y=-1;
+			handStruct[i].handOrientation.z=-1;
+		}
+
+		FingerStruct fingerStruct[10];
+		for(int i=0;i<10;++i)
+		{
+			fingerStruct[i].structType=DataStruct::Finger;
+			fingerStruct[i].valid=false;
+			fingerStruct[i].fingerId=-1;
+			fingerStruct[i].handId=-1;
+			fingerStruct[i].frame=frameCount;
+			fingerStruct[i].fingerPosition.x=-1;
+			fingerStruct[i].fingerPosition.y=-1;
+			fingerStruct[i].fingerPosition.z=-1;
+			fingerStruct[i].fingerOrientation.x=-1;
+			fingerStruct[i].fingerOrientation.y=-1;
+			fingerStruct[i].fingerOrientation.z=-1;
+		}
+
+		for(int i=0;i<controller.frame().fingers().count();++i)
+		{
+			Leap::Finger finger=controller.frame().fingers()[i];
+			fingerStruct[i].valid=true;
+			fingerStruct[i].fingerId=finger.id();
+			fingerStruct[i].handId=finger.hand().id();
+			fingerStruct[i].fingerPosition.x=finger.tipPosition().x;
+			fingerStruct[i].fingerPosition.y=finger.tipPosition().y;
+			fingerStruct[i].fingerPosition.z=finger.tipPosition().z;
+			fingerStruct[i].fingerOrientation.x=finger.direction().x;
+			fingerStruct[i].fingerOrientation.y=finger.direction().y;
+			fingerStruct[i].fingerOrientation.z=finger.direction().z;
+		}
+
+		for(int i=0;i<controller.frame().hands().count();++i)
+		{
+			Leap::Hand hand=controller.frame().hands()[i];
+			handStruct[i].valid=true;
+			handStruct[i].handId=hand.id();
+			for(int j=0;j<hand.fingers().count();++j)
+			{
+				handStruct[i].fingerIds[j]=hand.fingers()[j].id();
+			}
+			handStruct[i].handPosition.x=hand.palmPosition().x;
+			handStruct[i].handPosition.y=hand.palmPosition().y;
+			handStruct[i].handPosition.z=hand.palmPosition().z;
+			handStruct[i].handOrientation.x=hand.direction().x;
+			handStruct[i].handOrientation.y=hand.direction().y;
+			handStruct[i].handOrientation.z=hand.direction().z;
+		}
+
+		for(int i=0;i<controller.frame().fingers().count();++i)
+		{
+			Leap::Finger finger=controller.frame().fingers()[i];
+			fingerStruct[i].valid=true;
+			fingerStruct[i].fingerId=finger.id();
+			fingerStruct[i].handId=finger.hand().id();
+			fingerStruct[i].fingerPosition.x=finger.tipPosition().x;
+			fingerStruct[i].fingerPosition.y=finger.tipPosition().y;
+			fingerStruct[i].fingerPosition.z=finger.tipPosition().z;
+			fingerStruct[i].fingerOrientation.x=finger.direction().x;
+			fingerStruct[i].fingerOrientation.y=finger.direction().y;
+			fingerStruct[i].fingerOrientation.z=finger.direction().z;
+		}
+
+		for(int i=0;i<2;++i)
+		{
+			char handByte[handStructSize];
+			handConversion(handStruct[i],handByte);
+			memmove(&handsByte[i*handStructSize],handByte,handStructSize);
+		}
+
+		for(int i=0;i<10;++i)
+		{
+			char fingerByte[fingerStructSize];
+			fingerConversion(fingerStruct[i],fingerByte);
+			memmove(&fingersByte[i*fingerStructSize],fingerByte,fingerStructSize);
+		}
 
 		TouchStruct touchStruct[10];
 		for(int i=0;i<10;++i)
@@ -329,14 +425,14 @@ int main( int argc, char** argv )
 		
 		for(int i=0;i<10;++i)
 		{
-			char touchByte[21];
+			char touchByte[touchStructSize];
 			touchConversion(touchStruct[i],touchByte);
-			memmove(&touchesByte[i*21],touchByte,21);
+			memmove(&touchesByte[i*touchStructSize],touchByte,touchStructSize);
 		}
 		
 
-	//touch.getTouchPointList();
-		if(userFound==true)
+	
+		/*if(userFound==true)
 		{
 			headStruct.headId=kinectOpenNI.getHeadId();
 			headStruct.frame=frameCount;
@@ -359,17 +455,23 @@ int main( int argc, char** argv )
 			rightHandStruct.valid=true;
 			leftHandStruct.valid=true;
 			
-		}
+		}*/
 		headConversion(headStruct,headByte);
 		handConversion(rightHandStruct,rightHandByte);
 		handConversion(leftHandStruct,leftHandByte);
 
-		char dataToSend[361];
-		memmove(dataToSend,headByte,37);
-		memmove(&dataToSend[37],rightHandByte,57);
-		memmove(&dataToSend[94],leftHandByte,57);
-		memmove(&dataToSend[151],touchesByte,210);
-		send(client.getClientSocket(),dataToSend,361,0);
+		char dataToSend[headStructSize+2*handStructSize+10*touchStructSize+10*fingerStructSize];
+		memmove(dataToSend,headByte,headStructSize);
+		///////////////////Kinect hands
+		/*memmove(&dataToSend[headStructSize],rightHandByte,handStructSize);
+		memmove(&dataToSend[headStructSize+handStructSize],leftHandByte,handStructSize);*/
+		///////////////////
+		///////////////////Leap hands
+		memmove(&dataToSend[headStructSize],handsByte,2*handStructSize);
+		///////////////////
+		memmove(&dataToSend[headStructSize+2*handStructSize],touchesByte,touchStructSize*10);
+		memmove(&dataToSend[headStructSize+2*handStructSize+10*touchStructSize],fingersByte,fingerStructSize*10);
+		send(client.getClientSocket(),dataToSend,headStructSize+2*handStructSize+10*touchStructSize+10*fingerStructSize,0);
 		
 
 		//Create point cloud for the environment.
@@ -451,68 +553,61 @@ int main( int argc, char** argv )
 
 
 
-		//for(int i=0;i<controller.frame().hands().count();++i)
-		//{
-		//	PCLHand hand=PCLHand(&controller.frame().hands()[i]);
-		//	pclHands.push_back(&hand);
-		//	//std::cout<<controller.frame().hands()[i].palmPosition();
-		//	//send(client.getClientSocket(),"Hand",strlen("Hand"),0);
-		//}
-		//for(int i=0;i<controller.frame().fingers().count();++i)
-		//{
-		//	PCLFinger finger=PCLFinger(&controller.frame().fingers()[i]);
-		//	pclFingers.push_back(&finger);
-		//}
+		for(int i=0;i<controller.frame().hands().count();++i)
+		{
+			PCLHand hand=PCLHand(&controller.frame().hands()[i]);
+			pclHands.push_back(&hand);
+			//std::cout<<controller.frame().hands()[i].palmPosition();
+			//send(client.getClientSocket(),"Hand",strlen("Hand"),0);
+		}
+		for(int i=0;i<controller.frame().fingers().count();++i)
+		{
+			PCLFinger finger=PCLFinger(&controller.frame().fingers()[i]);
+			pclFingers.push_back(&finger);
+		}
 
-		//if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()!=0)
-		//{
-		//	//send(client.getClientSocket(),"Hand and finger",strlen("Hand and finger"),0);
-		//	std::cout<<"Hand and finger"<<std::endl;
-		//}
+		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()!=0)
+		{
+			std::cout<<"Hand and finger"<<std::endl;
+		}
 
-		//if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()==0)
-		//{
-		//	//send(client.getClientSocket(),"Hand",strlen("Hand"),0);
-		//	std::cout<<"Hand"<<std::endl;
-		//}
+		if(controller.frame().hands().count()!=0&&controller.frame().fingers().count()==0)
+		{
+			std::cout<<"Hand"<<std::endl;
+		}
 
-		//if(controller.frame().hands().count()==0&&controller.frame().fingers().count()!=0)
-		//{
-		//	//send(client.getClientSocket(),"Finger",strlen("Finger"),0);
-		//	std::cout<<"Finger"<<std::endl;
-		//}
+		if(controller.frame().hands().count()==0&&controller.frame().fingers().count()!=0)
+		{
+			std::cout<<"Finger"<<std::endl;
+		}
 
-		//if(controller.frame().hands().count()==0&&controller.frame().fingers().count()==0)
-		//{
-		//	//send(client.getClientSocket(),"None",strlen("None"),0);
-		//	std::cout<<"None"<<std::endl;
-		//}
 
-		//leapCloud->points.resize(0);
 
-		//for(int i=0;i<pclHands.size();++i)
-		//{
-		//	leapCloud->points.push_back(*pclHands.at(i));
-		//}
+		leapCloud->points.resize(0);
 
-		//for(int i=0;i<pclFingers.size();++i)
-		//{
-		//	leapCloud->points.push_back(*pclFingers.at(i));
-		//}
+		for(int i=0;i<pclHands.size();++i)
+		{
+			leapCloud->points.push_back(*pclHands.at(i));
+		}
+
+		for(int i=0;i<pclFingers.size();++i)
+		{
+			leapCloud->points.push_back(*pclFingers.at(i));
+		}
 
 
 
 		//cloudViewer.showCloud(pointCloud.getCloudXYZ());
 
 		//Display depth and color image.
-		cv::imshow("depth",depthImage);
-		cv::imshow("image",colorImage);
+		/*cv::imshow("depth",depthImage);
+		cv::imshow("image",colorImage);*/
 
 		key=cv::waitKey(20);
 
 	}
 	//Close the kinect engine.
-	kinectOpenNI.KinectClose();
+	//kinectOpenNI.KinectClose();
 	return 0;  
 }  
 
