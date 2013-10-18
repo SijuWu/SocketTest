@@ -20,7 +20,7 @@ namespace PQ_SDK_MultiTouch
 		~Touch(void);
 
 		int Init();
-		static  std::vector<TouchPoint> getTouchPointList();
+		static std::vector<TouchPoint>& getTouchPointList();
 		int getResolutionX();
 		int getResolutionY();
 	private:

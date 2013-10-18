@@ -10,6 +10,7 @@ using namespace PQ_SDK_MultiTouch;
 
 
 enum DataStruct{Hand=1, Finger=2, Head=3, ScreenTouch=4};
+enum TouchState{NonValid=0,Down=1,Move=2,Up=3};
 
 //2D position structure, 8 bytes
 struct Position2D
@@ -39,12 +40,12 @@ struct HandStruct
 {
 public:
 	DataStruct structType;
+	bool valid;
 	int handId;
 	int fingerIds[5];
 	int frame;
 	Position3D handPosition;
 	Orientation handOrientation;
-	bool valid;
 };
 
 //Finger data structure, 41 bytes
@@ -52,12 +53,13 @@ struct FingerStruct
 {
 public:
 	DataStruct structType;
+	bool valid;
 	int fingerId;
 	int handId;
 	int frame;
 	Position3D fingerPosition;
 	Orientation fingerOrientation;
-	bool valid;
+
 };
 
 //Head data structure, 37 bytes
@@ -65,23 +67,24 @@ struct HeadStruct
 {
 public:
 	DataStruct structType;
+	bool valid;
 	int headId;
 	int frame;
 	Position3D headPosition;
 	Orientation headOrientation;
-	bool valid;
 };
 
-//Touch data structure, 21 bytes
+//Touch data structure, 25 bytes
 //To add touch state
 struct TouchStruct
 {
 public:
 	DataStruct structType;
+	bool valid;
 	int touchId;
 	int frame;
 	Position2D touchPosition;
-	bool valid;
+	TouchState touchState;
 };
 
 //Keyboard input
@@ -109,12 +112,14 @@ int frameCount=0;
 const int handStructSize=57;
 const int fingerStructSize=41;
 const int headStructSize=37;
-const int touchStructSize=21;
+const int touchStructSize=25;
 
 void handConversion(HandStruct handStruct, char * handByte)
 {
 	//Bytes of structure type
 	char* typeByte=reinterpret_cast<char *>(&handStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(&handStruct.valid);
 	//Bytes of handId 
 	char* handIdByte=reinterpret_cast<char *>(&handStruct.handId);
 	//Bytes of fingerIds
@@ -134,26 +139,26 @@ void handConversion(HandStruct handStruct, char * handByte)
 	char* orientationXByte=reinterpret_cast<char *>(&handStruct.handOrientation.x);
 	char* orientationYByte=reinterpret_cast<char *>(&handStruct.handOrientation.y);
 	char* orientationZByte=reinterpret_cast<char *>(&handStruct.handOrientation.z);
-	//Bytes of valid value
-	char* validByte=reinterpret_cast<char *>(&handStruct.valid);
 
 	memmove(handByte,typeByte,4);
-	memmove(&handByte[4],handIdByte,4);
-	memmove(&handByte[8],fingerIdsByte,20);
-	memmove(&handByte[28],frameByte,4);
-	memmove(&handByte[32],positionXByte,4);
-	memmove(&handByte[36],positionYByte,4);
-	memmove(&handByte[40],positionZByte,4);
-	memmove(&handByte[44],orientationXByte,4);
-	memmove(&handByte[48],orientationYByte,4);
-	memmove(&handByte[52],orientationZByte,4);
-	memmove(&handByte[56],validByte,1);
+	memmove(&handByte[4],validByte,1);
+	memmove(&handByte[5],handIdByte,4);
+	memmove(&handByte[9],fingerIdsByte,20);
+	memmove(&handByte[29],frameByte,4);
+	memmove(&handByte[33],positionXByte,4);
+	memmove(&handByte[37],positionYByte,4);
+	memmove(&handByte[41],positionZByte,4);
+	memmove(&handByte[45],orientationXByte,4);
+	memmove(&handByte[49],orientationYByte,4);
+	memmove(&handByte[53],orientationZByte,4);
 }
 
 void touchConversion(TouchStruct touchStruct, char * touchByte)
 {
 	//Bytes of structure type
 	char* typeByte=reinterpret_cast<char *>(&touchStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(&touchStruct.valid);
 	//Bytes of touchId
 	char* touchIdByte=reinterpret_cast<char *>(&touchStruct.touchId);
 	//Bytes of frame
@@ -161,21 +166,24 @@ void touchConversion(TouchStruct touchStruct, char * touchByte)
 	//Bytes of touch position
 	char* positionXByte=reinterpret_cast<char *>(&touchStruct.touchPosition.x);
 	char* positionYByte=reinterpret_cast<char *>(&touchStruct.touchPosition.y);
-	//Bytes of valid value
-	char* validByte=reinterpret_cast<char *>(&touchStruct.valid);
+	//Bytes of touch state
+	char* stateByte=reinterpret_cast<char *>(&touchStruct.touchState);
 
 	memmove(touchByte,typeByte,4);
-	memmove(&touchByte[4],touchIdByte,4);
-	memmove(&touchByte[8],frameByte,4);
-	memmove(&touchByte[12],positionXByte,4);
-	memmove(&touchByte[16],positionYByte,4);
-	memmove(&touchByte[20],validByte,1);
+	memmove(&touchByte[4],validByte,1);
+	memmove(&touchByte[5],touchIdByte,4);
+	memmove(&touchByte[9],frameByte,4);
+	memmove(&touchByte[13],positionXByte,4);
+	memmove(&touchByte[17],positionYByte,4);
+	memmove(&touchByte[21],stateByte,4);
 }
 
 void fingerConversion(FingerStruct fingerStruct, char * fingerByte)
 {
 	//Bytes of structure type
 	char* typeByte=reinterpret_cast<char *>(&fingerStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(&fingerStruct.valid);
 	//Bytes of fingerId
 	char* fingerIdByte=reinterpret_cast<char *>(&fingerStruct.fingerId);
 	//Bytes of handId
@@ -190,26 +198,26 @@ void fingerConversion(FingerStruct fingerStruct, char * fingerByte)
 	char* orientationXByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.x);
 	char* orientationYByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.y);
 	char* orientationZByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.z);
-	//Bytes of valid value
-	char* validByte=reinterpret_cast<char *>(&fingerStruct.valid);
-
+	
 	memmove(fingerByte,typeByte,4);
-	memmove(&fingerByte[4],fingerIdByte,4);
-	memmove(&fingerByte[8],handIdByte,4);
-	memmove(&fingerByte[12],frameByte,4);
-	memmove(&fingerByte[16],positionXByte,4);
-	memmove(&fingerByte[20],positionYByte,4);
-	memmove(&fingerByte[24],positionZByte,4);
-	memmove(&fingerByte[28],orientationXByte,4);
-	memmove(&fingerByte[32],orientationYByte,4);
-	memmove(&fingerByte[36],orientationZByte,4);
-	memmove(&fingerByte[40],validByte,1);
+	memmove(&fingerByte[4],validByte,1);
+	memmove(&fingerByte[5],fingerIdByte,4);
+	memmove(&fingerByte[9],handIdByte,4);
+	memmove(&fingerByte[13],frameByte,4);
+	memmove(&fingerByte[17],positionXByte,4);
+	memmove(&fingerByte[21],positionYByte,4);
+	memmove(&fingerByte[25],positionZByte,4);
+	memmove(&fingerByte[29],orientationXByte,4);
+	memmove(&fingerByte[33],orientationYByte,4);
+	memmove(&fingerByte[37],orientationZByte,4);
 }
 
 void headConversion(HeadStruct headStruct, char * headByte)
 {
 	//Bytes of structure type
 	char* typeByte=reinterpret_cast<char *>(&headStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(&headStruct.valid);
 	//Bytes of headId
 	char* headIdByte=reinterpret_cast<char *>(&headStruct.headId);
 	//Bytes of frame
@@ -222,41 +230,40 @@ void headConversion(HeadStruct headStruct, char * headByte)
 	char* orientationXByte=reinterpret_cast<char *>(&headStruct.headOrientation.x);
 	char* orientationYByte=reinterpret_cast<char *>(&headStruct.headOrientation.y);
 	char* orientationZByte=reinterpret_cast<char *>(&headStruct.headOrientation.z);
-	//Bytes of valid value
-	char* validByte=reinterpret_cast<char *>(&headStruct.valid);
+	
 
 	memmove(headByte,typeByte,4);
-	memmove(&headByte[4],headIdByte,4);
-	memmove(&headByte[8],frameByte,4);
-	memmove(&headByte[12],positionXByte,4);
-	memmove(&headByte[16],positionYByte,4);
-	memmove(&headByte[20],positionZByte,4);
-	memmove(&headByte[24],orientationXByte,4);
-	memmove(&headByte[28],orientationYByte,4);
-	memmove(&headByte[32],orientationZByte,4);
-	memmove(&headByte[36],validByte,1);
+	memmove(&headByte[4],validByte,1);
+	memmove(&headByte[5],headIdByte,4);
+	memmove(&headByte[9],frameByte,4);
+	memmove(&headByte[13],positionXByte,4);
+	memmove(&headByte[17],positionYByte,4);
+	memmove(&headByte[21],positionZByte,4);
+	memmove(&headByte[25],orientationXByte,4);
+	memmove(&headByte[29],orientationYByte,4);
+	memmove(&headByte[33],orientationZByte,4);
 }
 
 int main( int argc, char** argv )  
 {  
-	//int err_code=touch.Init();
-	//if(err_code != PQMTE_SUCCESS){
-	//cout << "press any key to exit..." << endl;
-	//getchar();
-	//return 0;
-	//}
-	//// do other things of your application;
-	//cout << "hello world" << endl;
-	//
+	int err_code=touch.Init();
+	if(err_code != PQMTE_SUCCESS){
+		cout << "press any key to exit..." << endl;
+		getchar();
+		return 0;
+	}
+	// do other things of your application;
+	cout << "hello world" << endl;
+
 	//Client socket
 	SocketClient client;
-	bool connection=client.ConnectToHost(8000,"192.168.193.200");
-	//bool connection=client.ConnectToHost(8000,"192.168.1.2");
+	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
+	bool connection=client.ConnectToHost(8000,"192.168.1.3");
 
-	////Create KinectOpenNI engine.
-	//KinectOpenNI kinectOpenNI;
-	////Run Kinect.
-	//xn::SkeletonCapability skeletonCap=kinectOpenNI.KinectRun();
+	//Create KinectOpenNI engine.
+	KinectOpenNI kinectOpenNI;
+	//Run Kinect.
+	xn::SkeletonCapability skeletonCap=kinectOpenNI.KinectRun();
 	////Create point cloud viewer.
 	//pcl::visualization::CloudViewer cloudViewer("Simple Cloud Viewer");
 	//Point cloud of Leap data
@@ -272,19 +279,13 @@ int main( int argc, char** argv )
 
 	while(key!=27&&connection==true)
 	{
-		/*std::cout << "Frame id: " << controller.frame().id()
-		<< ", timestamp: " << controller.frame().timestamp()
-		<< ", hands: " << controller.frame().hands().count()
-		<< ", fingers: " << controller.frame().fingers().count()
-		<< ", tools: " << controller.frame().tools().count()
-		<< ", gestures: " << controller.frame().gestures().count() << std::endl;*/
 
-		////Update kinect for each frame.
-		//kinectOpenNI.kinectUpdate();
-		////Get depth and color image.
-		//kinectOpenNI.getCVImage(&depthImage,&colorImage);
-		////Check if any user is detected.
-		//userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
+		//Update kinect for each frame.
+		kinectOpenNI.kinectUpdate();
+		//Get depth and color image.
+		kinectOpenNI.getCVImage(&depthImage,&colorImage);
+		//Check if any user is detected.
+		userFound=kinectOpenNI.checkUser(&skeletonCap, colorImage);
 
 		frameCount++;
 
@@ -304,7 +305,7 @@ int main( int argc, char** argv )
 		leftHandStruct.valid=false;
 		leftHandStruct.structType=DataStruct::Hand;
 
-		HandStruct handStruct[2];
+		/*HandStruct handStruct[2];
 		for(int i=0;i<2;++i)
 		{
 			handStruct[i].structType=DataStruct::Hand;
@@ -321,7 +322,7 @@ int main( int argc, char** argv )
 			handStruct[i].handOrientation.x=-1;
 			handStruct[i].handOrientation.y=-1;
 			handStruct[i].handOrientation.z=-1;
-		}
+		}*/
 
 		FingerStruct fingerStruct[10];
 		for(int i=0;i<10;++i)
@@ -353,7 +354,7 @@ int main( int argc, char** argv )
 			fingerStruct[i].fingerOrientation.z=finger.direction().z;
 		}
 
-		for(int i=0;i<controller.frame().hands().count();++i)
+		/*for(int i=0;i<controller.frame().hands().count();++i)
 		{
 			Leap::Hand hand=controller.frame().hands()[i];
 			handStruct[i].valid=true;
@@ -368,28 +369,16 @@ int main( int argc, char** argv )
 			handStruct[i].handOrientation.x=hand.direction().x;
 			handStruct[i].handOrientation.y=hand.direction().y;
 			handStruct[i].handOrientation.z=hand.direction().z;
-		}
+		}*/
 
-		for(int i=0;i<controller.frame().fingers().count();++i)
-		{
-			Leap::Finger finger=controller.frame().fingers()[i];
-			fingerStruct[i].valid=true;
-			fingerStruct[i].fingerId=finger.id();
-			fingerStruct[i].handId=finger.hand().id();
-			fingerStruct[i].fingerPosition.x=finger.tipPosition().x;
-			fingerStruct[i].fingerPosition.y=finger.tipPosition().y;
-			fingerStruct[i].fingerPosition.z=finger.tipPosition().z;
-			fingerStruct[i].fingerOrientation.x=finger.direction().x;
-			fingerStruct[i].fingerOrientation.y=finger.direction().y;
-			fingerStruct[i].fingerOrientation.z=finger.direction().z;
-		}
+		
 
-		for(int i=0;i<2;++i)
+		/*for(int i=0;i<2;++i)
 		{
 			char handByte[handStructSize];
 			handConversion(handStruct[i],handByte);
 			memmove(&handsByte[i*handStructSize],handByte,handStructSize);
-		}
+		}*/
 
 		for(int i=0;i<10;++i)
 		{
@@ -407,41 +396,72 @@ int main( int argc, char** argv )
 			touchStruct[i].frame=frameCount;
 			touchStruct[i].touchPosition.x=-1;
 			touchStruct[i].touchPosition.y=-1;
+			touchStruct[i].touchState=TouchState::NonValid;
 		}
-
-		std::vector<TouchPoint> pointList=touch.getTouchPointList();
 
 		int resolutionX=touch.getResolutionX();
 		int resolutionY=touch.getResolutionY();
 
-		for(int i=0;i<pointList.size();++i)
+		for(int i=0;i<touch.getTouchPointList().size();++i)
 		{
 			touchStruct[i].valid=true;
-			touchStruct[i].touchId=pointList[i].id;
-			touchStruct[i].touchPosition.x=((float)pointList[i].x/(float)resolutionX);
-			touchStruct[i].touchPosition.y=((float)pointList[i].y/(float)resolutionY);
-			
+			touchStruct[i].touchId=touch.getTouchPointList()[i].id;
+			touchStruct[i].touchPosition.x=((float)touch.getTouchPointList()[i].x/(float)resolutionX);
+			touchStruct[i].touchPosition.y=((float)touch.getTouchPointList()[i].y/(float)resolutionY);
+			switch(touch.getTouchPointList()[i].point_event)
+			{
+			//Touch Down sometimes can't be obtained correctly, covered by Touch Move
+			case TP_DOWN:
+				touchStruct[i].touchState=TouchState::Down;
+				break;
+			case TP_MOVE:
+				touchStruct[i].touchState=TouchState::Move;
+				break;
+			case TP_UP:
+				touchStruct[i].touchState=TouchState::Up;
+				break;
+			}
+
 		}
-		
+
+		int validTouchCount=0;
 		for(int i=0;i<10;++i)
 		{
+			if(touchStruct[i].valid==true)
+				validTouchCount++;
 			char touchByte[touchStructSize];
 			touchConversion(touchStruct[i],touchByte);
 			memmove(&touchesByte[i*touchStructSize],touchByte,touchStructSize);
 		}
-		
 
-	
-		/*if(userFound==true)
+		for(int i=0;i<10;++i)
 		{
+			if(validTouchCount==1)
+			{
+				if(touchStruct[i].touchState==TouchState::Up)
+				{
+					touchStruct[i].valid=false;
+					touchStruct[i].touchId=-1;
+					touchStruct[i].touchState=TouchState::NonValid;
+					touchStruct[i].touchPosition.x=-1;
+					touchStruct[i].touchPosition.y=-1;
+				}
+				touch.getTouchPointList().clear();
+			}
+		}
+
+
+		if(userFound==true)
+		{
+			headStruct.valid=true;
 			headStruct.headId=kinectOpenNI.getHeadId();
 			headStruct.frame=frameCount;
 			headStruct.headPosition.x=kinectOpenNI.getHead().x;
 			headStruct.headPosition.y=kinectOpenNI.getHead().y;
 			headStruct.headPosition.z=kinectOpenNI.getHead().z;
-			headStruct.valid=true;
-			
 
+			rightHandStruct.valid=true;
+			leftHandStruct.valid=true;
 			rightHandStruct.handId=kinectOpenNI.getRightHandId();
 			leftHandStruct.handId=kinectOpenNI.getLeftHandId();
 			rightHandStruct.frame=frameCount;
@@ -452,10 +472,7 @@ int main( int argc, char** argv )
 			leftHandStruct.handPosition.x=kinectOpenNI.getLeftHand().x;
 			leftHandStruct.handPosition.y=kinectOpenNI.getLeftHand().y;
 			leftHandStruct.handPosition.z=kinectOpenNI.getLeftHand().z;
-			rightHandStruct.valid=true;
-			leftHandStruct.valid=true;
-			
-		}*/
+		}
 		headConversion(headStruct,headByte);
 		handConversion(rightHandStruct,rightHandByte);
 		handConversion(leftHandStruct,leftHandByte);
@@ -463,16 +480,16 @@ int main( int argc, char** argv )
 		char dataToSend[headStructSize+2*handStructSize+10*touchStructSize+10*fingerStructSize];
 		memmove(dataToSend,headByte,headStructSize);
 		///////////////////Kinect hands
-		/*memmove(&dataToSend[headStructSize],rightHandByte,handStructSize);
-		memmove(&dataToSend[headStructSize+handStructSize],leftHandByte,handStructSize);*/
+		memmove(&dataToSend[headStructSize],rightHandByte,handStructSize);
+		memmove(&dataToSend[headStructSize+handStructSize],leftHandByte,handStructSize);
 		///////////////////
 		///////////////////Leap hands
-		memmove(&dataToSend[headStructSize],handsByte,2*handStructSize);
+		/*memmove(&dataToSend[headStructSize],handsByte,2*handStructSize);*/
 		///////////////////
 		memmove(&dataToSend[headStructSize+2*handStructSize],touchesByte,touchStructSize*10);
 		memmove(&dataToSend[headStructSize+2*handStructSize+10*touchStructSize],fingersByte,fingerStructSize*10);
 		send(client.getClientSocket(),dataToSend,headStructSize+2*handStructSize+10*touchStructSize+10*fingerStructSize,0);
-		
+
 
 		//Create point cloud for the environment.
 		//pointCloud.createCloudXYZ(kinectOpenNI.getDepthData());
@@ -481,76 +498,6 @@ int main( int argc, char** argv )
 
 		/*pclHands.resize(0);
 		pclFingers.resize(0);*/
-
-
-		/*HandStruct testHand;
-		testHand.structType=DataStruct::Hand;
-		testHand.handId=1;
-		for(int i=0;i<5;++i)
-		{
-			testHand.fingerIds[i]=i;
-		}
-		testHand.frame=frameCount;
-		testHand.handPosition.x=1.1;
-		testHand.handPosition.y=2.2;
-		testHand.handPosition.z=3.3;
-		testHand.handOrientation.x=1.1;
-		testHand.handOrientation.y=2.2;
-		testHand.handOrientation.z=3.3;
-		testHand.valid=true;
-		char handByte[57];
-		handConversion(testHand,handByte);
-
-		FingerStruct testFinger;
-		testFinger.structType=DataStruct::Finger;
-		testFinger.fingerId=2;
-		testFinger.handId=1;
-		testFinger.frame=frameCount;
-		testFinger.fingerPosition.x=4.4;
-		testFinger.fingerPosition.y=5.5;
-		testFinger.fingerPosition.z=6.6;
-		testFinger.fingerOrientation.x=7.7;
-		testFinger.fingerOrientation.y=8.8;
-		testFinger.fingerOrientation.z=9.9;
-		testFinger.valid=true;
-		char fingerByte[41];
-		fingerConversion(testFinger,fingerByte);
-
-		HeadStruct testHead;
-		testHead.structType=DataStruct::Head;
-		testHead.headId=3;
-		testHead.frame=frameCount;
-		testHead.headPosition.x=-4.4;
-		testHead.headPosition.y=-5.5;
-		testHead.headPosition.z=-6.6;
-		testHead.headOrientation.x=-7.7;
-		testHead.headOrientation.y=-8.8;
-		testHead.headOrientation.z=-9.9;
-		testHead.valid=true;
-		char headByte[37];
-		headConversion(testHead,headByte);
-
-		TouchStruct testTouch;
-		testTouch.structType=DataStruct::Touch;
-		testTouch.touchId=3;
-		testTouch.frame=frameCount;
-		testTouch.touchPosition.x=-1.1;
-		testTouch.touchPosition.y=-2.2;
-		testTouch.valid=true;
-		char touchByte[21];
-		touchConversion(testTouch,touchByte);*/
-
-		/*char dataToSend[156];
-		memmove(dataToSend,handByte,57);
-		memmove(&dataToSend[57],fingerByte,41);
-		memmove(&dataToSend[98],headByte,37);
-		memmove(&dataToSend[135],touchByte,21);*/
-		//send(client.getClientSocket(),dataToSend,156,0);
-
-
-
-
-
 
 
 		for(int i=0;i<controller.frame().hands().count();++i)
@@ -600,14 +547,14 @@ int main( int argc, char** argv )
 		//cloudViewer.showCloud(pointCloud.getCloudXYZ());
 
 		//Display depth and color image.
-		/*cv::imshow("depth",depthImage);
-		cv::imshow("image",colorImage);*/
+		cv::imshow("depth",depthImage);
+		cv::imshow("image",colorImage);
 
 		key=cv::waitKey(20);
 
 	}
 	//Close the kinect engine.
-	//kinectOpenNI.KinectClose();
+	kinectOpenNI.KinectClose();
 	return 0;  
 }  
 

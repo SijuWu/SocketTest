@@ -109,18 +109,19 @@ void Touch:: OnReceivePointFrame(int frame_id, int time_stamp, int moving_point_
 		"up",
 	};
 	
-	cout << " frame_id:" << frame_id << " time:"  << time_stamp << " ms" << " moving point count:" << moving_point_count << endl;
+	//cout << " frame_id:" << frame_id << " time:"  << time_stamp << " ms" << " moving point count:" << moving_point_count << endl;
 	
-	
+	cout<<moving_point_count<<endl;
 	touchPointList.clear();
 	for(int i = 0; i < moving_point_count; ++ i){
 		TouchPoint tp = moving_point_array[i];
 		touch->OnTouchPoint(tp);
 
 		touchPointList.push_back(tp);
-		if(touchPointList.size()==10)
+		if(i>=9)
 			break;
 	}
+
 	//throw exception("test exception here");
 }
 void Touch:: OnReceiveGesture(const TouchGesture & ges, void * call_back_object)
@@ -171,16 +172,16 @@ void Touch:: OnTouchPoint(const TouchPoint & tp)
 	switch(tp.point_event)
 	{
 	case TP_DOWN:
-		cout << "  point " << tp.id << " come at (" << tp.x << "," << tp.y 
-			<< ") width:" << tp.dx << " height:" << tp.dy << endl;
+	/*	cout << "  point " << tp.id << " come at (" << tp.x << "," << tp.y 
+			<< ") width:" << tp.dx << " height:" << tp.dy << endl;*/
 		break;
 	case TP_MOVE:
-		cout << "  point " << tp.id << " move at (" << tp.x << "," << tp.y 
-			<< ") width:" << tp.dx << " height:" << tp.dy << endl;
+		/*cout << "  point " << tp.id << " move at (" << tp.x << "," << tp.y 
+			<< ") width:" << tp.dx << " height:" << tp.dy << endl;*/
 		break;
 	case TP_UP:
-		cout << "  point " << tp.id << " leave at (" << tp.x << "," << tp.y 
-			<< ") width:" << tp.dx << " height:" << tp.dy << endl;
+		/*cout << "  point " << tp.id << " leave at (" << tp.x << "," << tp.y 
+			<< ") width:" << tp.dx << " height:" << tp.dy << endl;*/
 		break;
 	}
 }
@@ -199,7 +200,7 @@ void Touch:: OnTouchGesture(const TouchGesture & tg)
 void Touch:: OnTG_TouchStart(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_TOUCH_START);
-	cout << "  here, the touch start, initialize something." << endl;
+	//cout << "  here, the touch start, initialize something." << endl;
 }
 void Touch:: DefaultOnTG(const TouchGesture & tg,void * call_object) // just show the gesture
 {
@@ -211,37 +212,37 @@ void Touch:: DefaultOnTG(const TouchGesture & tg,void * call_object) // just sho
 void Touch:: OnTG_Down(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_DOWN && tg.param_size >= 2);
-	cout << "  the single finger touching at :( " 
-		<< tg.params[0] << "," << tg.params[1] << " )" << endl;
+	//cout << "  the single finger touching at :( " 
+		//<< tg.params[0] << "," << tg.params[1] << " )" << endl;
 }
 void Touch:: OnTG_Move(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_MOVE && tg.param_size >= 2);
-	cout << "  the single finger moving on the screen at :( " 
-		<< tg.params[0] << "," << tg.params[1] << " )" << endl;
+	/*cout << "  the single finger moving on the screen at :( " 
+		<< tg.params[0] << "," << tg.params[1] << " )" << endl;*/
 }
 void Touch:: OnTG_Up(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_UP && tg.param_size >= 2);
-	cout << " the single finger is leaving the screen at :( " 
-		<< tg.params[0] << "," << tg.params[1] << " )" << endl;
+	/*cout << " the single finger is leaving the screen at :( " 
+		<< tg.params[0] << "," << tg.params[1] << " )" << endl;*/
 }
 //
 void Touch:: OnTG_SecondDown(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_SECOND_DOWN && tg.param_size >= 4);
-	cout << "  the second finger touching at :( " 
+	/*cout << "  the second finger touching at :( " 
 		<< tg.params[0] << "," << tg.params[1] << " ),"
 		<< " after the first finger touched at :( "
-		<< tg.params[2] << "," << tg.params[3] << " )" << endl;
+		<< tg.params[2] << "," << tg.params[3] << " )" << endl;*/
 }
 void Touch:: OnTG_SecondUp(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_SECOND_UP && tg.param_size >= 4);
-	cout << "  the second finger is leaving at :( " 
+	/*cout << "  the second finger is leaving at :( " 
 		<< tg.params[0] << "," << tg.params[1] << " ),"
 		<< " while the first finger still anchored around :( "
-		<< tg.params[2] << "," << tg.params[3] << " )" << endl;
+		<< tg.params[2] << "," << tg.params[3] << " )" << endl;*/
 }
 //
 void Touch:: OnTG_SplitStart(const TouchGesture & tg,void * call_object)
@@ -287,7 +288,7 @@ void Touch:: OnTG_TouchEnd(const TouchGesture & tg,void * call_object)
 /////////////////////////// functions ///////////////////////////////////
 }
 
- std::vector<TouchPoint> Touch::getTouchPointList()
+ std::vector<TouchPoint>& Touch::getTouchPointList()
 {
 	return touchPointList;
 }
