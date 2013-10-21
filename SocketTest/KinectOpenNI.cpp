@@ -449,31 +449,36 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 				headId=principalUserId*100+1;
 
 				head.x=(skelPointsOut[0].X-320)*skelPointsOut[0].Z*F;
-				head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;
+				//head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;
+				head.y=(240-skelPointsOut[0].Y)*skelPointsOut[0].Z*F;
 				head.z=skelPointsOut[0].Z;
 
 				//RightHand ID is 15, skelPointsOut index is 14
 				rightHandId=principalUserId*100+15;
 
 				rightHand.x=(skelPointsOut[14].X-320)*skelPointsOut[14].Z*F;
-				rightHand.y=(skelPointsOut[14].Y-240)*skelPointsOut[14].Z*F;
+				//rightHand.y=(skelPointsOut[14].Y-240)*skelPointsOut[14].Z*F;
+				rightHand.y=(240-skelPointsOut[14].Y)*skelPointsOut[14].Z*F;
 				rightHand.z=skelPointsOut[14].Z;
 
 				//LeftHand ID is 9, skelPointsOut index is 8
 				leftHandId=principalUserId*100+9;
 
 				leftHand.x=(skelPointsOut[8].X-320)*skelPointsOut[8].Z*F;
-				leftHand.y=(skelPointsOut[8].Y-240)*skelPointsOut[8].Z*F;
+				/*leftHand.y=(skelPointsOut[8].Y-240)*skelPointsOut[8].Z*F;*/
+				leftHand.y=(240-skelPointsOut[8].Y)*skelPointsOut[8].Z*F;
 				leftHand.z=skelPointsOut[8].Z;
 
 				//RightElbow ID is 13, skelPointsOut index is 12
 				rightElbow.x=(skelPointsOut[12].X-320)*skelPointsOut[12].Z*F;
-				rightElbow.y=(skelPointsOut[12].Y-240)*skelPointsOut[12].Z*F;
+				/*rightElbow.y=(skelPointsOut[12].Y-240)*skelPointsOut[12].Z*F;*/
+				rightElbow.y=(240-skelPointsOut[12].Y)*skelPointsOut[12].Z*F;
 				rightElbow.z=skelPointsOut[12].Z;
 
 				//LeftElbow ID is 7, skelPointsOut index is 6
 				leftElbow.x=(skelPointsOut[6].X-320)*skelPointsOut[6].Z*F;
-				leftElbow.y=(skelPointsOut[6].Y-240)*skelPointsOut[6].Z*F;
+				/*leftElbow.y=(skelPointsOut[6].Y-240)*skelPointsOut[6].Z*F;*/
+				leftElbow.y=(240-skelPointsOut[6].Y)*skelPointsOut[6].Z*F;
 				leftElbow.z=skelPointsOut[6].Z;
 				break;
 			}

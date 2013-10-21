@@ -70,8 +70,13 @@ namespace PQ_SDK_MultiTouch
 		static void OnTG_SplitClose(const TouchGesture & tg,void * call_object);
 		static void OnTG_SplitEnd(const TouchGesture & tg,void * call_object);
 
+		static void OnTG_RotateStart(const TouchGesture & tg,void * call_object);
+		static void OnTG_RotateAnticlock(const TouchGesture & tg,void * call_object);
+		static void OnTG_RotateClock(const TouchGesture & tg,void * call_object);
+		static void OnTG_RotateEnd(const TouchGesture & tg,void * call_object);
 		// OnTG_TouchEnd: to clear what need to clear;
 		static void OnTG_TouchEnd(const TouchGesture & tg,void * call_object);
+	
 	private:
 		PFuncOnTouchGesture m_pf_on_tges[TG_TOUCH_END + 1];
 	};

@@ -9,8 +9,10 @@
 using namespace PQ_SDK_MultiTouch;
 
 
-enum DataStruct{Hand=1, Finger=2, Head=3, ScreenTouch=4};
+enum DataStruct{Hand=1, Finger=2, Head=3, ScreenTouch=4, Rotate=5, Split=6};
 enum TouchState{NonValid=0,Down=1,Move=2,Up=3};
+enum RotateState{RotateNonValid=0,RotateStart=1,RotateAnticlock=2,RotateClock=3,RotateEnd=4};
+enum SplitState{SplitNonValid=0,SplitStart=1,SplitApart=2,SplitClose=3,SplitEnd=4};
 
 //2D position structure, 8 bytes
 struct Position2D
@@ -87,6 +89,27 @@ public:
 	TouchState touchState;
 };
 
+//Rotate gesture structure, 29 bytes
+
+struct RotateStruct
+{
+	DataStruct structType;
+	bool valid;
+	int frame;
+	Position2D rotateFingersPositions[2];
+	RotateState rotateState;
+};
+
+//Split gesture structure, 29 bytes
+struct SplitStruct
+{
+	DataStruct structType;
+	bool valid;
+	int frame;
+	Position2D splitFingersPosition[2];
+	SplitState splitState;
+};
+
 //Keyboard input
 char key=0;
 //Matrix of depth image
@@ -113,6 +136,8 @@ const int handStructSize=57;
 const int fingerStructSize=41;
 const int headStructSize=37;
 const int touchStructSize=25;
+const int rotateStructSize=29;
+const int splitStructSize=29;
 
 void handConversion(HandStruct handStruct, char * handByte)
 {
@@ -198,7 +223,7 @@ void fingerConversion(FingerStruct fingerStruct, char * fingerByte)
 	char* orientationXByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.x);
 	char* orientationYByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.y);
 	char* orientationZByte=reinterpret_cast<char *>(&fingerStruct.fingerOrientation.z);
-	
+
 	memmove(fingerByte,typeByte,4);
 	memmove(&fingerByte[4],validByte,1);
 	memmove(&fingerByte[5],fingerIdByte,4);
@@ -230,7 +255,7 @@ void headConversion(HeadStruct headStruct, char * headByte)
 	char* orientationXByte=reinterpret_cast<char *>(&headStruct.headOrientation.x);
 	char* orientationYByte=reinterpret_cast<char *>(&headStruct.headOrientation.y);
 	char* orientationZByte=reinterpret_cast<char *>(&headStruct.headOrientation.z);
-	
+
 
 	memmove(headByte,typeByte,4);
 	memmove(&headByte[4],validByte,1);
@@ -242,6 +267,40 @@ void headConversion(HeadStruct headStruct, char * headByte)
 	memmove(&headByte[25],orientationXByte,4);
 	memmove(&headByte[29],orientationYByte,4);
 	memmove(&headByte[33],orientationZByte,4);
+}
+
+void rotateConversion(RotateStruct rotateStruct, char * rotateByte)
+{
+	//Bytes of structure type
+	char* typeByte=reinterpret_cast<char *>(&rotateStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(&rotateStruct.valid);
+	//Bytes of frame
+	char* frameByte=reinterpret_cast<char *>(&rotateStruct.frame);
+	//Bytes of fingers position
+	char* positionX1Byte=reinterpret_cast<char *>(&rotateStruct.rotateFingersPositions[0].x);
+	char* positionY1Byte=reinterpret_cast<char *>(&rotateStruct.rotateFingersPositions[0].y);
+	char* positionX2Byte=reinterpret_cast<char *>(&rotateStruct.rotateFingersPositions[1].x);
+	char* positionY2Byte=reinterpret_cast<char *>(&rotateStruct.rotateFingersPositions[1].y);
+	//Bytes of rotate state
+	char* stateByte=reinterpret_cast<char *>(&rotateStruct.rotateState);
+}
+
+void splitConversion(SplitStruct splitStruct, char * SplitByte)
+{
+	//Bytes of structure type
+	char* typeByte=reinterpret_cast<char *>(& splitStruct.structType);
+	//Bytes of valid value
+	char* validByte=reinterpret_cast<char *>(& splitStruct.valid);
+	//Bytes of frame
+	char* frameByte=reinterpret_cast<char *>(& splitStruct.frame);
+	//Bytes of fingers position
+	char* positionX1Byte=reinterpret_cast<char *>(& splitStruct.splitFingersPositions[0].x);
+	char* positionY1Byte=reinterpret_cast<char *>(& splitStruct.splitFingersPositions[0].y);
+	char* positionX2Byte=reinterpret_cast<char *>(& splitStruct.splitFingersPositions[1].x);
+	char* positionY2Byte=reinterpret_cast<char *>(& splitStruct.splitFingersPositions[1].y);
+	//Bytes of rotate state
+	char* stateByte=reinterpret_cast<char *>(&splitStruct.splitState);
 }
 
 int main( int argc, char** argv )  
@@ -277,7 +336,7 @@ int main( int argc, char** argv )
 	//Add event listener to the controller.
 	controller.addListener(leapListener);
 
-	while(key!=27&&connection==true)
+	while(key!=27/*&&connection==true*/)
 	{
 
 		//Update kinect for each frame.
@@ -295,6 +354,9 @@ int main( int argc, char** argv )
 		char handsByte[handStructSize*2];
 		char fingersByte[fingerStructSize*10];
 		char touchesByte[touchStructSize*10];
+		char rotateByte[rotateStructSize];
+		char splitByte[splitStructSize];
+
 		HeadStruct headStruct;
 		headStruct.structType=DataStruct::Head;
 		headStruct.valid=false;
@@ -305,23 +367,42 @@ int main( int argc, char** argv )
 		leftHandStruct.valid=false;
 		leftHandStruct.structType=DataStruct::Hand;
 
+		RotateStruct rotateStruct;
+		rotateStruct.structType=DataStruct::Rotate;
+		rotateStruct.valid=false;
+		rotateStruct.frame=frameCount;
+		rotateStruct.rotateFingersPositions[0].x=-1;
+		rotateStruct.rotateFingersPositions[0].y=-1;
+		rotateStruct.rotateFingersPositions[1].x=-1;
+		rotateStruct.rotateFingersPositions[1].y=-1;
+		
+
+		SplitStruct splitStruct;
+		splitStruct.structType=DataStruct::Split;
+		splitStruct.valid=false;
+		splitStruct.frame=frameCount;
+		splitStruct.splitFingersPositions[0].x=-1;
+		splitStruct.splitFingersPositions[0].y=-1;
+		splitStruct.splitFingersPositions[1].x=-1;
+		splitStruct.splitFingersPositions[1].y=-1;
+
 		/*HandStruct handStruct[2];
 		for(int i=0;i<2;++i)
 		{
-			handStruct[i].structType=DataStruct::Hand;
-			handStruct[i].valid=false;
-			handStruct[i].handId=-1;
-			for(int j=0;j<5;++j)
-			{
-				handStruct[i].fingerIds[j]=-1;
-			}
-			handStruct[i].frame=frameCount;
-			handStruct[i].handPosition.x=-1;
-			handStruct[i].handPosition.y=-1;
-			handStruct[i].handPosition.z=-1;
-			handStruct[i].handOrientation.x=-1;
-			handStruct[i].handOrientation.y=-1;
-			handStruct[i].handOrientation.z=-1;
+		handStruct[i].structType=DataStruct::Hand;
+		handStruct[i].valid=false;
+		handStruct[i].handId=-1;
+		for(int j=0;j<5;++j)
+		{
+		handStruct[i].fingerIds[j]=-1;
+		}
+		handStruct[i].frame=frameCount;
+		handStruct[i].handPosition.x=-1;
+		handStruct[i].handPosition.y=-1;
+		handStruct[i].handPosition.z=-1;
+		handStruct[i].handOrientation.x=-1;
+		handStruct[i].handOrientation.y=-1;
+		handStruct[i].handOrientation.z=-1;
 		}*/
 
 		FingerStruct fingerStruct[10];
@@ -356,28 +437,28 @@ int main( int argc, char** argv )
 
 		/*for(int i=0;i<controller.frame().hands().count();++i)
 		{
-			Leap::Hand hand=controller.frame().hands()[i];
-			handStruct[i].valid=true;
-			handStruct[i].handId=hand.id();
-			for(int j=0;j<hand.fingers().count();++j)
-			{
-				handStruct[i].fingerIds[j]=hand.fingers()[j].id();
-			}
-			handStruct[i].handPosition.x=hand.palmPosition().x;
-			handStruct[i].handPosition.y=hand.palmPosition().y;
-			handStruct[i].handPosition.z=hand.palmPosition().z;
-			handStruct[i].handOrientation.x=hand.direction().x;
-			handStruct[i].handOrientation.y=hand.direction().y;
-			handStruct[i].handOrientation.z=hand.direction().z;
+		Leap::Hand hand=controller.frame().hands()[i];
+		handStruct[i].valid=true;
+		handStruct[i].handId=hand.id();
+		for(int j=0;j<hand.fingers().count();++j)
+		{
+		handStruct[i].fingerIds[j]=hand.fingers()[j].id();
+		}
+		handStruct[i].handPosition.x=hand.palmPosition().x;
+		handStruct[i].handPosition.y=hand.palmPosition().y;
+		handStruct[i].handPosition.z=hand.palmPosition().z;
+		handStruct[i].handOrientation.x=hand.direction().x;
+		handStruct[i].handOrientation.y=hand.direction().y;
+		handStruct[i].handOrientation.z=hand.direction().z;
 		}*/
 
-		
+
 
 		/*for(int i=0;i<2;++i)
 		{
-			char handByte[handStructSize];
-			handConversion(handStruct[i],handByte);
-			memmove(&handsByte[i*handStructSize],handByte,handStructSize);
+		char handByte[handStructSize];
+		handConversion(handStruct[i],handByte);
+		memmove(&handsByte[i*handStructSize],handByte,handStructSize);
 		}*/
 
 		for(int i=0;i<10;++i)
@@ -410,7 +491,7 @@ int main( int argc, char** argv )
 			touchStruct[i].touchPosition.y=((float)touch.getTouchPointList()[i].y/(float)resolutionY);
 			switch(touch.getTouchPointList()[i].point_event)
 			{
-			//Touch Down sometimes can't be obtained correctly, covered by Touch Move
+				//Touch Down sometimes can't be obtained correctly, covered by Touch Move
 			case TP_DOWN:
 				touchStruct[i].touchState=TouchState::Down;
 				break;
@@ -421,7 +502,6 @@ int main( int argc, char** argv )
 				touchStruct[i].touchState=TouchState::Up;
 				break;
 			}
-
 		}
 
 		int validTouchCount=0;

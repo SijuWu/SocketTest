@@ -10,7 +10,10 @@
 
 namespace PQ_SDK_MultiTouch
 {
-static  std::vector<TouchPoint> touchPointList;
+static std::vector<TouchPoint> touchPointList;
+//The first means the state, the last means the angle
+static double rotateParameters[6];
+static double splitParameters[7];
 static int resolutionX;
 static int resolutionY;
 	Touch::Touch(void)
@@ -87,7 +90,13 @@ void Touch:: InitFuncOnTG()
 	m_pf_on_tges[TG_SPLIT_CLOSE] = &Touch::OnTG_SplitClose;
 	m_pf_on_tges[TG_SPLIT_END] = &Touch::OnTG_SplitEnd;
 
+	m_pf_on_tges[TG_ROTATE_START] = &Touch::OnTG_RotateStart;
+	m_pf_on_tges[TG_ROTATE_ANTICLOCK] = &Touch::OnTG_RotateAnticlock;
+	m_pf_on_tges[TG_ROTATE_CLOCK] = &Touch::OnTG_RotateClock;
+	m_pf_on_tges[TG_ROTATE_END] = &Touch::OnTG_RotateEnd;
+
 	m_pf_on_tges[TG_TOUCH_END] = &Touch::OnTG_TouchEnd;
+
 }
 void Touch::SetFuncsOnReceiveProc()
 {
@@ -252,6 +261,13 @@ void Touch:: OnTG_SplitStart(const TouchGesture & tg,void * call_object)
 		<< tg.params[0] << "," << tg.params[1] << " ),"
 		<< " , the other at :( "
 		<< tg.params[2] << "," << tg.params[3] << " )" << endl;
+
+	splitParameters[0]=1;
+	splitParameters[1]=tg.params[0];
+	splitParameters[2]=tg.params[1];
+	splitParameters[3]=tg.params[2];
+	splitParameters[4]=tg.params[3];
+	splitParameters[5]=0;
 }
 
 void Touch:: OnTG_SplitApart(const TouchGesture & tg,void * call_object)
@@ -261,6 +277,14 @@ void Touch:: OnTG_SplitApart(const TouchGesture & tg,void * call_object)
 		<< tg.params[0]
 		<< " with a ratio :" << tg.params[1]
 		<< endl;
+
+		splitParameters[0]=2;
+		splitParameters[1]=tg.params[2];
+		splitParameters[2]=tg.params[3];
+		splitParameters[3]=tg.params[4];
+		splitParameters[4]=tg.params[5];
+		splitParameters[5]=tg.params[0];
+		splitParameters[6]=tg.params[1];
 }
 void Touch:: OnTG_SplitClose(const TouchGesture & tg,void * call_object)
 {
@@ -269,6 +293,14 @@ void Touch:: OnTG_SplitClose(const TouchGesture & tg,void * call_object)
 		<< tg.params[0]
 		<< " with a ratio :" << tg.params[1]
 		<< endl;
+
+		splitParameters[0]=3;
+		splitParameters[1]=tg.params[2];
+		splitParameters[2]=tg.params[3];
+		splitParameters[3]=tg.params[4];
+		splitParameters[4]=tg.params[5];
+		splitParameters[5]=tg.params[0];
+		splitParameters[6]=tg.params[1];
 }
 void Touch:: OnTG_SplitEnd(const TouchGesture & tg,void * call_object)
 {
@@ -278,13 +310,64 @@ void Touch:: OnTG_SplitEnd(const TouchGesture & tg,void * call_object)
 		<< " , the other at :( "
 		<< tg.params[2] << "," << tg.params[3] << " )" 
 		<< " will end" << endl;
+
+	splitParameters[0]=4;
+		splitParameters[1]=tg.params[0];
+		splitParameters[2]=tg.params[1];
+		splitParameters[3]=tg.params[2];
+		splitParameters[4]=tg.params[3];
+		
 }
+
+void Touch::OnTG_RotateStart(const TouchGesture & tg,void * call_object)
+{
+	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 4);
+	rotateParameters[0]=1;
+	rotateParameters[1]=tg.params[0];
+	rotateParameters[2]=tg.params[1];
+	rotateParameters[3]=tg.params[2];
+	rotateParameters[4]=tg.params[3];
+	rotateParameters[5]=0;
+}
+void Touch::OnTG_RotateAnticlock(const TouchGesture & tg,void * call_object)
+{
+	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 5);
+	rotateParameters[0]=2;
+	rotateParameters[1]=tg.params[0];
+	rotateParameters[2]=tg.params[1];
+	rotateParameters[3]=tg.params[2];
+	rotateParameters[4]=tg.params[3];
+	rotateParameters[5]=tg.params[4];
+}
+void Touch::OnTG_RotateClock(const TouchGesture & tg,void * call_object)
+{
+	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 5);
+	rotateParameters[0]=3;
+	rotateParameters[1]=tg.params[0];
+	rotateParameters[2]=tg.params[1];
+	rotateParameters[3]=tg.params[2];
+	rotateParameters[4]=tg.params[3];
+	rotateParameters[5]=tg.params[4];
+}
+void Touch::OnTG_RotateEnd(const TouchGesture & tg,void * call_object)
+{
+	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 4);
+	rotateParameters[0]=4;
+	rotateParameters[1]=tg.params[0];
+	rotateParameters[2]=tg.params[1];
+	rotateParameters[3]=tg.params[2];
+	rotateParameters[4]=tg.params[3];
+	rotateParameters[5]=0;
+}
+
 // OnTG_TouchEnd: to clear what need to clear
 void Touch:: OnTG_TouchEnd(const TouchGesture & tg,void * call_object)
 {
 	assert(tg.type == TG_TOUCH_END);
 	cout << "  all the fingers is leaving and there is no fingers on the screen." << endl;
 }
+
+
 /////////////////////////// functions ///////////////////////////////////
 }
 
