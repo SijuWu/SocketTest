@@ -18,7 +18,7 @@ public:
 	~KinectOpenNI(void);
 	xn::SkeletonCapability KinectRun();
 	void KinectClose();
-	void getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
+	cv::Mat getCVImage(cv::Mat* depthImage,cv::Mat* colorImage);
 	const XnDepthPixel* getDepthData();
 	const XnUInt8* getImageData();  
 	bool checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorImage);
@@ -31,6 +31,11 @@ public:
 	pcl::PointXYZ getLeftHand();
 	//void displayImage();
 	void kinectUpdate();
+
+	XnPoint3D getImageHead();
+	XnPoint3D getImageRightHand();
+	XnPoint3D getImageLeftHand();
+
 private:
 	void CheckOpenNIError( XnStatus result, std::string status ); 
 	
@@ -83,6 +88,9 @@ private:
 	pcl::PointXYZ rightHandOrientation;
 	pcl::PointXYZ leftElbow;
 	pcl::PointXYZ rightElbow;
+	XnPoint3D imageRightHand;
+	XnPoint3D imageLeftHand;
+	XnPoint3D imageHead;
 
 	double rightHandX;
 	double rightHandY;

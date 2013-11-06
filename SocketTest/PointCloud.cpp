@@ -76,6 +76,55 @@ void PointCloud::createCloudXYZ( const XnDepthPixel* pDepth)
 	}
 }
 
+void PointCloud::createCloudXYZ(cv::Mat* depthImage)
+{
+	cloudXYZ->clear();
+	cloudXYZ->resize(640*480);
+	std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >*points=&cloudXYZ->points;
+	
+	//Get the pointer of the x coordinate of the first point
+	float* pointPtr=&(*points)[0].x;
+	//Get the pointer of the depthImage
+
+
+	//The focal length of the RGB camera
+	float F = 0.0019047619f;
+
+	for( unsigned int i =0; i < 640*480; ++i)  
+	{
+		
+
+		//Get the 2D position of each pixel
+		int row=i/640;
+		int col=i%640;
+
+		//Get the depth of the pixel
+		float zValue=depthImage->at<unsigned short>(row,col);
+
+		if(zValue!=0)
+		{
+			//Set the x coordinate of the point
+			*pointPtr=(col-320)*zValue*F;
+			//Jump to the pointer of the y coordonate
+			pointPtr++;
+			//Set the y coordinate of the point
+			*pointPtr=(row-240)*zValue*F;
+			//Jump to the pointer of the z coordinate
+			pointPtr++;
+			//Set the z coordinate of the point
+			(*pointPtr)=zValue;
+			//Jump to the pointer of the blue color
+			pointPtr=pointPtr+2;
+		}
+
+		else
+		{
+			//Jump to the next point
+			pointPtr=pointPtr+4;
+		}
+	}
+}
+
 void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* pColor)
 {
 	cloudXYZRGBA->clear();
@@ -135,9 +184,6 @@ void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* p
 			colorPtr=colorPtr+13;
 			//Get the pointer of the next point
 			pointPtr=(float*)colorPtr;
-
-
-
 		}
 
 		else
@@ -155,6 +201,81 @@ void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* p
 	}
 }
 
+void PointCloud::createCloudXYZRGBA(cv::Mat* depthImage,const XnUInt8* pColor)
+{
+	cloudXYZRGBA->clear();
+	cloudXYZRGBA->resize(640*480);
+	std::vector<pcl::PointXYZRGBA, Eigen::aligned_allocator<pcl::PointXYZRGBA> >*points=&cloudXYZRGBA->points;
+
+	//Get the pointer of the x coordinate of the first point
+	float* pointPtr=&(*points)[0].x;
+	const XnUInt8* colorPtr=pColor;
+	const XnUInt8* pRed=colorPtr;
+	const XnUInt8* pGreen=++colorPtr;
+	const XnUInt8* pBlue=++colorPtr;
+	//The focal length of the RGB camera
+	float F = 0.0019047619f;
+
+	for( unsigned int i =0; i < 640*480; ++i)  
+	{
+		
+
+		//Get the 2D position of each pixel
+		int row=i/640;
+		int col=i%640;
+
+		//Get the depth of the pixel
+		float zValue=depthImage->at<unsigned short>(row,col);
+
+		if(zValue!=0)
+		{
+			//Set the x coordinate of the point
+			*pointPtr=(col-320)*zValue*F;
+			//Jump to the pointer of the y coordonate
+			pointPtr++;
+			//Set the y coordinate of the point
+			*pointPtr=(row-240)*zValue*F;
+			//Jump to the pointer of the z coordinate
+			pointPtr++;
+			//Set the z coordinate of the point
+			(*pointPtr)=zValue;
+			//Jump to the pointer of the blue color
+			pointPtr=pointPtr+2;
+
+			//Get the pointer of the blue color
+			uint8_t* colorPtr=(uint8_t*)pointPtr;
+			//Set the blue color
+			*colorPtr=*pBlue;
+			//Jump to the green color
+			*colorPtr++;
+			//Set the green color
+			*colorPtr=*pGreen;
+			//Jump to the red color
+			*colorPtr++;
+			//Set the red color
+			*colorPtr=*pRed;
+			//Jump to the transparence 
+			*colorPtr++;
+			//Set the transparence
+			*colorPtr=0;
+			//Jump to the next point
+			colorPtr=colorPtr+13;
+			//Get the pointer of the next point
+			pointPtr=(float*)colorPtr;
+		}
+
+		else
+		{
+			//Jump to the next point
+			pointPtr=pointPtr+8;
+		}
+
+		//Jump to the color pointers of the next pixel on the colorImage
+		pBlue=pBlue+3;
+		pGreen=pGreen+3;
+		pRed=pRed+3;
+	}
+}
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudXYZ()
 {

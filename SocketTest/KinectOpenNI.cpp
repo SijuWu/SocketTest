@@ -379,7 +379,7 @@ void KinectOpenNI::CheckOpenNIError( XnStatus result, std::string status )
 		std::cerr << status << " Error: " << xnGetStatusString( result ) << std::endl;  
 }  
 
-void KinectOpenNI::getCVImage(cv::Mat* depthImage,cv::Mat* colorImage)
+cv::Mat KinectOpenNI::getCVImage(cv::Mat* depthImage,cv::Mat* colorImage)
 {
 	//get meta data  
 	depthGenerator.GetMetaData(depthMD);   
@@ -391,6 +391,8 @@ void KinectOpenNI::getCVImage(cv::Mat* depthImage,cv::Mat* colorImage)
 
 	cv::Mat rawColorImage(480,640,CV_8UC3,(void*)imageMD.Data());
 	cv::cvtColor( rawColorImage,*colorImage, CV_RGB2BGR );
+
+	return rawDepthImage;
 }
 
 //void KinectOpenNI::getCVImage(cv::Mat* depthImage,cv::Mat* colorImage)
@@ -447,27 +449,24 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 				/////////////////
 				//Head ID is 1, skelPointsOut index is 0
 				headId=principalUserId*100+1;
-
 				head.x=(skelPointsOut[0].X-320)*skelPointsOut[0].Z*F;
-				//head.y=(skelPointsOut[0].Y-240)*skelPointsOut[0].Z*F;
 				head.y=(240-skelPointsOut[0].Y)*skelPointsOut[0].Z*F;
 				head.z=skelPointsOut[0].Z;
+				imageHead=skelPointsOut[0];
 
 				//RightHand ID is 15, skelPointsOut index is 14
 				rightHandId=principalUserId*100+15;
-
 				rightHand.x=(skelPointsOut[14].X-320)*skelPointsOut[14].Z*F;
-				//rightHand.y=(skelPointsOut[14].Y-240)*skelPointsOut[14].Z*F;
 				rightHand.y=(240-skelPointsOut[14].Y)*skelPointsOut[14].Z*F;
 				rightHand.z=skelPointsOut[14].Z;
+				imageRightHand=skelPointsOut[14];
 
 				//LeftHand ID is 9, skelPointsOut index is 8
 				leftHandId=principalUserId*100+9;
-
 				leftHand.x=(skelPointsOut[8].X-320)*skelPointsOut[8].Z*F;
-				/*leftHand.y=(skelPointsOut[8].Y-240)*skelPointsOut[8].Z*F;*/
 				leftHand.y=(240-skelPointsOut[8].Y)*skelPointsOut[8].Z*F;
 				leftHand.z=skelPointsOut[8].Z;
+				imageLeftHand=skelPointsOut[8];
 
 				//RightElbow ID is 13, skelPointsOut index is 12
 				rightElbow.x=(skelPointsOut[12].X-320)*skelPointsOut[12].Z*F;
@@ -544,4 +543,19 @@ pcl::PointXYZ KinectOpenNI::getRightHand()
 pcl::PointXYZ KinectOpenNI::getLeftHand()
 {
 	return leftHand;
+}
+
+XnPoint3D KinectOpenNI::getImageHead()
+{
+	return imageHead;
+}
+
+XnPoint3D KinectOpenNI::getImageRightHand()
+{
+	return imageRightHand;
+}
+
+XnPoint3D KinectOpenNI::getImageLeftHand()
+{
+	return imageLeftHand;
 }

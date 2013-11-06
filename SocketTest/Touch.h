@@ -23,6 +23,8 @@ namespace PQ_SDK_MultiTouch
 		static std::vector<TouchPoint>& getTouchPointList();
 		int getResolutionX();
 		int getResolutionY();
+		double* getRotateParameters();
+		double* getSplitParameters();
 	private:
 		// OnReceivePointFrame: function to handle when recieve touch point frame
 		//	the unmoving touch point won't be sent from server. The new touch point with its pointevent is TP_DOWN

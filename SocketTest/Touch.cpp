@@ -12,7 +12,12 @@ namespace PQ_SDK_MultiTouch
 {
 static std::vector<TouchPoint> touchPointList;
 //The first means the state, the last means the angle
+//0:RotateState, 1:X coordinate of the anchor point, 2:Y coordinate of the anchor point
+//3:X coordinate of the other point, 4:Y coordinate of the other point, 5:Rotate angle
+//RotateState:0 nonValid, 1 Start, 2 Anticlock,3 Clock,4 End
 static double rotateParameters[6];
+//0: SplitState, 1:X coordinate of the first point, 2:Y coordinate of the first point
+//3:X coordinate of the second point, 4:Y coordinate of the second point, 5:Finger distance, 6:Distance ratio
 static double splitParameters[7];
 static int resolutionX;
 static int resolutionY;
@@ -120,7 +125,7 @@ void Touch:: OnReceivePointFrame(int frame_id, int time_stamp, int moving_point_
 	
 	//cout << " frame_id:" << frame_id << " time:"  << time_stamp << " ms" << " moving point count:" << moving_point_count << endl;
 	
-	cout<<moving_point_count<<endl;
+	//cout<<moving_point_count<<endl;
 	touchPointList.clear();
 	for(int i = 0; i < moving_point_count; ++ i){
 		TouchPoint tp = moving_point_array[i];
@@ -328,36 +333,40 @@ void Touch::OnTG_RotateStart(const TouchGesture & tg,void * call_object)
 	rotateParameters[3]=tg.params[2];
 	rotateParameters[4]=tg.params[3];
 	rotateParameters[5]=0;
+	//cout<<"Start"<<endl;
 }
 void Touch::OnTG_RotateAnticlock(const TouchGesture & tg,void * call_object)
 {
-	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 5);
+	assert(tg.type==TG_ROTATE_ANTICLOCK	&& tg.param_size >= 5);
 	rotateParameters[0]=2;
-	rotateParameters[1]=tg.params[0];
-	rotateParameters[2]=tg.params[1];
-	rotateParameters[3]=tg.params[2];
-	rotateParameters[4]=tg.params[3];
-	rotateParameters[5]=tg.params[4];
+	rotateParameters[1]=tg.params[1];
+	rotateParameters[2]=tg.params[2];
+	rotateParameters[3]=tg.params[3];
+	rotateParameters[4]=tg.params[4];
+	rotateParameters[5]=tg.params[0];
+	//cout<<"Anticlock"<<endl;
 }
 void Touch::OnTG_RotateClock(const TouchGesture & tg,void * call_object)
 {
-	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 5);
+	assert(tg.type==TG_ROTATE_CLOCK&& tg.param_size >= 5);
 	rotateParameters[0]=3;
-	rotateParameters[1]=tg.params[0];
-	rotateParameters[2]=tg.params[1];
-	rotateParameters[3]=tg.params[2];
-	rotateParameters[4]=tg.params[3];
-	rotateParameters[5]=tg.params[4];
+	rotateParameters[1]=tg.params[1];
+	rotateParameters[2]=tg.params[2];
+	rotateParameters[3]=tg.params[3];
+	rotateParameters[4]=tg.params[4];
+	rotateParameters[5]=tg.params[0];
+	//cout<<"Clock"<<endl;
 }
 void Touch::OnTG_RotateEnd(const TouchGesture & tg,void * call_object)
 {
-	assert(tg.type==TG_ROTATE_START&& tg.param_size >= 4);
+	assert(tg.type==TG_ROTATE_END&& tg.param_size >= 4);
 	rotateParameters[0]=4;
 	rotateParameters[1]=tg.params[0];
 	rotateParameters[2]=tg.params[1];
 	rotateParameters[3]=tg.params[2];
 	rotateParameters[4]=tg.params[3];
 	rotateParameters[5]=0;
+	//cout<<"End"<<endl;
 }
 
 // OnTG_TouchEnd: to clear what need to clear
@@ -384,4 +393,14 @@ void Touch:: OnTG_TouchEnd(const TouchGesture & tg,void * call_object)
  int Touch::getResolutionY()
  {
 	 return resolutionY;
+ }
+
+ double* Touch::getRotateParameters()
+ {
+	 return rotateParameters;
+ }
+
+ double* Touch::getSplitParameters()
+ {
+	 return splitParameters;
  }

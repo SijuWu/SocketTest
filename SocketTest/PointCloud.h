@@ -27,7 +27,7 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/console/parse.h>
-
+#include "opencv/cv.h"  
 
 class PointCloud
 {
@@ -36,8 +36,10 @@ public:
 	~PointCloud(void);
 	//Create the point cloud without color.
 	void createCloudXYZ( const XnDepthPixel* pDepth);
+	void createCloudXYZ(cv::Mat* depthImage);
 	//Create the point cloud with color.
 	void createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* pColor);
+	void createCloudXYZRGBA(cv::Mat* depthImage,const XnUInt8* pColor);
 	//Get the point cloud without color.
 	pcl::PointCloud<pcl::PointXYZ>::Ptr getCloudXYZ();
 	//Get the point cloud with color.
