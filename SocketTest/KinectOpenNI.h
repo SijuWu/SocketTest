@@ -29,6 +29,7 @@ public:
 	pcl::PointXYZ getHead();
 	pcl::PointXYZ getRightHand();
 	pcl::PointXYZ getLeftHand();
+	pcl::PointXYZRGBA getLeftHandColor();
 	//void displayImage();
 	void kinectUpdate();
 
@@ -83,6 +84,7 @@ private:
 	pcl::PointXYZ head;
 	pcl::PointXYZ headOrientation;
 	pcl::PointXYZ leftHand;
+	pcl::PointXYZRGBA leftHandColor;
 	pcl::PointXYZ leftHandOrientation;
 	pcl::PointXYZ rightHand;
 	pcl::PointXYZ rightHandOrientation;

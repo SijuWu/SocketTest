@@ -466,6 +466,13 @@ bool KinectOpenNI::checkUser(xn::SkeletonCapability* skeletonCap, cv::Mat colorI
 				leftHand.x=(skelPointsOut[8].X-320)*skelPointsOut[8].Z*F;
 				leftHand.y=(240-skelPointsOut[8].Y)*skelPointsOut[8].Z*F;
 				leftHand.z=skelPointsOut[8].Z;
+				leftHandColor.x=(skelPointsOut[8].X-320)*skelPointsOut[8].Z*F;
+				leftHandColor.y=(240-skelPointsOut[8].Y)*skelPointsOut[8].Z*F;
+				leftHandColor.z=skelPointsOut[8].Z;
+				leftHandColor.r=255;
+				leftHandColor.g=255;
+				leftHandColor.b=255;
+				leftHandColor.a=0;
 				imageLeftHand=skelPointsOut[8];
 
 				//RightElbow ID is 13, skelPointsOut index is 12
@@ -558,4 +565,9 @@ XnPoint3D KinectOpenNI::getImageRightHand()
 XnPoint3D KinectOpenNI::getImageLeftHand()
 {
 	return imageLeftHand;
+}
+
+pcl::PointXYZRGBA KinectOpenNI::getLeftHandColor()
+{
+	return leftHandColor;
 }

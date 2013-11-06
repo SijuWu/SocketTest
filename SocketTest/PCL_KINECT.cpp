@@ -114,6 +114,8 @@ struct SplitStruct
 
 //Keyboard input
 char key=0;
+//Display mode
+int mode=0;
 //Matrix of depth image
 cv::Mat depthImage;
 //Matrix of color image
@@ -122,6 +124,10 @@ cv::Mat colorImage;
 cv::Mat rawDepthImage;
 //PointCloud
 PointCloud pointCloud;
+//Point cloud of left hand
+PointCloud leftPointCloud;
+//Point cloud of right hand
+PointCloud rightPointCloud;
 //Check if any user is found
 bool userFound;
 //Leap motion event listener;
@@ -1019,16 +1025,171 @@ int main( int argc, char** argv )
 				}
 			}
 
-			pointCloud.createCloudXYZRGBA(&rawLeftHand,kinectOpenNI.getImageData());
+			/*leftPointCloud.createCloudXYZRGBA(&rawLeftHand,kinectOpenNI.getImageData());
+			rightPointCloud.createCloudXYZRGBA(&rawRightHand,kinectOpenNI.getImageData());*/
 
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudDownSample=pointCloud.downSampling(pointCloud.getCloudXYZRGBA(),5.0f,5.0f,5.0f);
-			cloudViewer.showCloud(cloudDownSample);
+			pointCloud.createCloudXYZ(&rawLeftHand);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr leftCloudDownSample=pointCloud.downSampling(pointCloud.getCloudXYZ(),2.0f,2.0f,2.0f);
+			
+			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialLeftHand=pointCloud.searchNeighbourKdTreeRadius(leftCloudDownSample,250.0f,&kinectOpenNI.getLeftHand());
+			pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud(new pcl::PointCloud<pcl::PointXYZ>);;
+			pcl::PointXYZ leftElbow;
+			if(potentialLeftHand->size()!=0)
+			{
+				if(pointCloud.getNearBlobs2(potentialLeftHand,leftHandCloud)==false)
+				{
+					pointCloud.setArmCenter(&leftElbow,0);
+				}
+			}
+
+			pointCloud.getEigens(leftHandCloud,0);
+
+			pcl::PointCloud<pcl::PointXYZ>::Ptr palm(new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr digits(new pcl::PointCloud<pcl::PointXYZ>); 
+
+			pointCloud.covarianceFilter(leftHandCloud,35,0,palm,digits);//30
+			std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>fingers;
+			if(digits->points.size()!=0)
+			{
+				//Segmentation of fingers
+				fingers=pointCloud.segFingers(digits,7,20);//5,20
+			}
+
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
 
 
+				for(int i=0;i<fingers.size();++i)
+				{
+					/*if(pointCloud.checkFinger(fingers[i])==false)
+					continue;*/
+
+
+					/*if(pointCloud.checkFinger(fingers[i])<0.86)
+					continue;*/
+					//If the finger tip is not far enough to the center, pass it
+					double distance=pointCloud.checkFingerDistance(fingers[i]);
+					if(distance<70)
+						continue;
+					std::cout<<distance<<" "<<i<<std::endl;
+					std::cout<<std::endl;
+
+					switch(i)
+					{
+					case 0:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,0));
+						break;
+					case 1:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,0));
+						break;
+					case 2:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,0,255));
+						break;
+					case 3:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,0));
+						break;
+					case 4:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,255));
+						break;
+					case 5:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,255));
+						break;
+					case 6:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
+						break;
+					}
+				}
+
+
+				//Add finger cloud to color hand cloud
+				for(int i=0;i<colorFingers.size();++i)
+				{
+					for(int j=0;j<colorFingers[i]->points.size();++j)
+					{
+						colorHand->points.push_back(colorFingers[i]->points[j]);
+					}
+				}
+				//////////Add center and direction line
+				pcl::PointXYZRGBA handCenter;
+				handCenter.x=pointCloud.getHandCenter()(0);
+				handCenter.y=pointCloud.getHandCenter()(1);
+				handCenter.z=pointCloud.getHandCenter()(2);
+				handCenter.r=100;
+				handCenter.g=50;
+				handCenter.b=200;
+				colorHand->points.push_back(handCenter);
+
+				for(int i=0;i<50;++i)
+				{
+					pcl::PointXYZRGBA point;
+					point.x=handCenter.x+i*pointCloud.getHandDirection()(0);
+					point.y=handCenter.y+i*pointCloud.getHandDirection()(1);
+					point.z=handCenter.z+i*pointCloud.getHandDirection()(2);
+					point.r=100;
+					point.g=50;
+					point.b=200;
+					colorHand->points.push_back(point);
+				}
+
+				for(int i=0;i<fingers.size();++i)
+				{
+					double distance=pointCloud.checkFingerDistance(fingers[i]);
+					if(distance<70)
+						continue;
+					pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLineCloud=pointCloud.getFingerLine(fingers[i]);
+					for(int j=0;j<fingerLineCloud->points.size();++j)
+					{
+						colorHand->points.push_back(fingerLineCloud->points[j]);
+					}
+				}
+			switch(key)
+			{
+			case '1':
+				mode=1;
+				break;
+			case '2':
+				mode=2;
+				break;
+			case '3':
+				mode=3;
+				break;
+			case '4':
+				mode=4;
+				break;
+			}
+
+			
+
+			switch(mode)
+			{
+			case 1:
+				cloudViewer.showCloud(leftCloudDownSample);
+				break;
+			case 2:
+				cloudViewer.showCloud(leftHandCloud);
+				break;
+			case 3:
+				cloudViewer.showCloud(digits);
+				break;
+			case 4:
+				cloudViewer.showCloud(colorHand);
+				break;
+				
+				
+			}
+			
+
+		/*	
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr leftCloudDownSample=leftPointCloud.downSampling(pointCloud.getCloudXYZRGBA(),5.0f,5.0f,5.0f);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr rightCloudDownSample=rightPointCloud.downSampling(pointCloud.getCloudXYZRGBA(),5.0f,5.0f,5.0f);*/
+
+			
+			
+			
 			//Create point cloud for the environment.
 		
 		////Calculate the normals
-			pcl::NormalEstimation<pcl::PointXYZRGBA,pcl::Normal> ne;
+			/*pcl::NormalEstimation<pcl::PointXYZRGBA,pcl::Normal> ne;
 			ne.setInputCloud(cloudDownSample);
 
 			pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA> ());
@@ -1036,7 +1197,7 @@ int main( int argc, char** argv )
 
 			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
 			ne.setRadiusSearch(5);
-			ne.compute(*cloud_normals);
+			ne.compute(*cloud_normals);*/
 
 			//viewer.removeAllPointClouds();
 			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloudDownSample);

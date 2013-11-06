@@ -56,7 +56,8 @@ void PointCloud::createCloudXYZ( const XnDepthPixel* pDepth)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			*pointPtr=(row-240)*zValue*F;
+			/**pointPtr=(row-240)*zValue*F;*/
+			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
 			//Set the z coordinate of the point
@@ -108,7 +109,8 @@ void PointCloud::createCloudXYZ(cv::Mat* depthImage)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			*pointPtr=(row-240)*zValue*F;
+			/**pointPtr=(row-240)*zValue*F;*/
+			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
 			//Set the z coordinate of the point
@@ -156,7 +158,8 @@ void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* p
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			*pointPtr=(row-240)*zValue*F;
+			/**pointPtr=(row-240)*zValue*F;*/
+			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
 			//Set the z coordinate of the point
@@ -234,7 +237,8 @@ void PointCloud::createCloudXYZRGBA(cv::Mat* depthImage,const XnUInt8* pColor)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			*pointPtr=(row-240)*zValue*F;
+			/**pointPtr=(row-240)*zValue*F;*/
+			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
 			//Set the z coordinate of the point
@@ -922,6 +926,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 	std::vector<float> pointRadiusSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
@@ -1066,6 +1071,129 @@ bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pc
 
 	//rightHandCloud=cloudout;
 	rightHandCloud->points.swap(cloudout->points);
+	//*if(!foundarm)*/
+	//nearcents.push_back(nearcent1);
+	return true;
+}
+
+bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr newCloud)
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudout(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointXYZ pt,pt1,pt2;
+	pt.x=pt.y=pt.z=0;
+	int pointCount=cloud->points.size();
+	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
+	std::vector<float> dists;
+	Eigen::Vector4f centroid1,centroid2,nearcent1;
+
+	//find cloest pt to camera
+	NNN(cloud,&pt,inds1,dists,2000);
+	int ind=0;
+	double smallestdist;
+
+	for(int i=0;i<dists.size(); ++i){
+		if( i==0 ||dists[i]<smallestdist){
+			ind=inds1[i];
+			smallestdist=dists[i];
+		}
+	}
+
+	smallestdist=std::sqrt(smallestdist);
+	pt1=cloud->points[ind];
+
+	
+	NNN(cloud,&pt1,inds2,100);
+
+	/**if(inds2.size()<100)
+	{
+	return false;
+	}*/
+	pcl::PointCloud<pcl::PointXYZ> handCloud=*cloud;
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-20;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	std::vector<int> temp;
+	NNN(cloud,&pt2,temp,150);//150
+	/*if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;*/
+
+	findNearbyPts(cloud,temp,nearcent1);
+
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-10;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	getSubCloud(cloud,inds2,cloudout);
+
+
+	//rightHandCloud=cloudout;
+	newCloud->points.swap(cloudout->points);
+	//*if(!foundarm)*/
+	arm_center[0]=nearcent1;
+	//nearcents.push_back(nearcent1);
+	return true;
+}
+
+bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,pcl::PointCloud<pcl::PointXYZRGBA>::Ptr newCloud)
+{
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudout(new pcl::PointCloud<pcl::PointXYZRGBA>);
+	pcl::PointXYZRGBA pt,pt1,pt2;
+	pt.x=pt.y=pt.z=0;
+	int pointCount=cloud->points.size();
+	std::vector<int> inds1,inds2/*,inds3(pointCount,1)*/;
+	std::vector<float> dists;
+	Eigen::Vector4f centroid1,centroid2,nearcent1;
+
+	//find cloest pt to camera
+	NNN(cloud,&pt,inds1,dists,2000);
+	int ind=0;
+	double smallestdist;
+
+	for(int i=0;i<dists.size(); ++i){
+		if(dists[i]<smallestdist || i==0 ){
+			ind=inds1[i];
+			smallestdist=dists[i];
+		}
+	}
+
+	smallestdist=std::sqrt(smallestdist);
+	pt1=cloud->points[ind];
+
+	
+	NNN(cloud,&pt1,inds2,100);
+
+	/**if(inds2.size()<100)
+	{
+	return false;
+	}*/
+	pcl::PointCloud<pcl::PointXYZRGBA> handCloud=*cloud;
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-20;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	std::vector<int> temp;
+	NNN(cloud,&pt2,temp,150);
+	if(!(findNearbyPts(cloud,temp,nearcent1)))
+	return false;
+
+	pcl::compute3DCentroid(handCloud,inds2,centroid1);
+	pt2.x=centroid1(0);
+	pt2.y=centroid1(1)-100;
+	pt2.z=centroid1(2);
+	NNN(cloud,&pt2,inds2,100);
+
+	getSubCloud(cloud,inds2,cloudout);
+
+
+	//rightHandCloud=cloudout;
+	newCloud->points.swap(cloudout->points);
 	//*if(!foundarm)*/
 	//nearcents.push_back(nearcent1);
 	return true;
@@ -1527,10 +1655,11 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
  void PointCloud::covarianceFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,double tol,int hand, pcl::PointCloud<pcl::PointXYZ>::Ptr palm, pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
  {
 	 vector<int> tempinds;
-	 if(hand==0)
+	 /*if(hand==0)
 		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
 	 else
-		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
+	 NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
 
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
 	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
@@ -1540,8 +1669,8 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);//30,45
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,5,45,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,5,45,&searchCenter);//30,45
 
 	 std::vector<int> inds,inds2,inds3;
 	 std::vector<int> searchinds;
@@ -1739,16 +1868,16 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 
  void PointCloud::setArmCenter(pcl::PointXYZ* armCenter,int hand)
  {
-	 if(hand==0)
+	 if(hand==PointCloud::LeftHand)
 	 {
-		 arm_center[0](0)=(*armCenter).x;
-		 arm_center[0](1)=(*armCenter).y;
-		 arm_center[0](2)=(*armCenter).z;
+		 arm_center[hand](0)=(*armCenter).x;
+		 arm_center[hand](1)=(*armCenter).y;
+		 arm_center[hand](2)=(*armCenter).z;
 	 }
-	 if(hand==1)
+	 if(hand==PointCloud::RightHand)
 	 {
-		 arm_center[1](0)=(*armCenter).x;
-		 arm_center[1](1)=(*armCenter).y;
-		 arm_center[1](2)=(*armCenter).z;
+		 arm_center[hand](0)=(*armCenter).x;
+		 arm_center[hand](1)=(*armCenter).y;
+		 arm_center[hand](2)=(*armCenter).z;
 	 }
  }
