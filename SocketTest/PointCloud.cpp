@@ -501,9 +501,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExt
 	ec.setClusterTolerance(tolerance);
 	ec.setMinClusterSize(minClusterSize);
 	ec.setMaxClusterSize(maxClusterSize);
-	/*ec.setClusterTolerance(30);
-	ec.setMinClusterSize(500);
-	ec.setMaxClusterSize(25000);*/
+
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloudSource);
 	ec.extract(cluster_indices);
@@ -1536,6 +1534,31 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 
  }
 
+void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int resolution,int radius,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr digits,pcl::PointXYZ *center)
+{
+	vector<int> tempinds;
+	 if(hand==0)
+		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
+	 else
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
+
+	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 Eigen::Vector4f handCenter;
+	 
+	 //////////method 1
+	 pcl::compute3DCentroid(handPoints,handCenter);
+	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	center->x=searchCenter.x;
+	center->y=searchCenter.y;
+	center->z=searchCenter.z;
+	
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
+	 digits->points.swap(digitsCloud->points);
+}
+
  void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int nnthresh,double tol,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr palm,pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
  {
 	
@@ -1651,6 +1674,36 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	
  }
 
+ void PointCloud::normalFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int hand, int radius,pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
+ {
+	 pcl::NormalEstimation<pcl::PointXYZ,pcl::Normal> ne;
+	 ne.setInputCloud(handCloud);
+
+	 pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+	 ne.setSearchMethod(tree);
+
+	 pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+	 ne.setRadiusSearch(radius);
+	 ne.compute(*cloud_normals);
+
+	 std::vector<int> digitsIndex;
+	 for(int i=0;i<handCloud->size();++i)
+	 {
+		 Eigen::Vector4f pointNormal;
+		 pointNormal(0)=cloud_normals->at(i).normal_x;
+		 pointNormal(1)=cloud_normals->at(i).normal_y;
+		 pointNormal(2)=cloud_normals->at(i).normal_z;
+		 pointNormal(3)=0;
+		 handDirection(3)=0;
+		 double dotValue=handDirection.dot(pointNormal);
+
+		 //if(std::abs(dotValue)>0.7)
+		 if(dotValue>0.7)
+			 digitsIndex.push_back(i);
+	 }
+
+	 getSubCloud(handCloud,digitsIndex,digits,true);
+ }
 
  void PointCloud::covarianceFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,double tol,int hand, pcl::PointCloud<pcl::PointXYZ>::Ptr palm, pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
  {
@@ -1669,8 +1722,8 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,5,45,&searchCenter);//30,45
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,5,45,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,5,40,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,5,40,&searchCenter);//30,45
 
 	 std::vector<int> inds,inds2,inds3;
 	 std::vector<int> searchinds;
@@ -1724,7 +1777,86 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 			 inds3.push_back(i);
 	 }
 
-	 getSubCloud(digitsCloud,inds,palm,true);
+	 //getSubCloud(digitsCloud,inds,palm,true);
+	 palm->points.swap(palmCloud->points);
+	 getSubCloud(digitsCloud,inds3,digits,true);
+ }
+
+
+ void PointCloud::covarianceFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,double tol,int hand, float resolution,float radius, pcl::PointCloud<pcl::PointXYZ>::Ptr palm, pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
+ {
+	 	 vector<int> tempinds;
+	 /*if(hand==0)
+		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
+	 else
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
+	 NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
+
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
+
+	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	 Eigen::Vector4f handCenter;
+
+	 pcl::compute3DCentroid(handPoints,handCenter);
+	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
+	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
+
+	 std::vector<int> inds,inds2,inds3;
+	 std::vector<int> searchinds;
+	 pcl::PointCloud<pcl::PointXYZ> potentialPoints=*digitsCloud;
+	 SplitCloud2 sc2(potentialPoints,tol);
+	 inds2.resize(potentialPoints.points.size(),-1);
+
+	 int label;
+	 for(int i=0;i<potentialPoints.points.size();++i)
+	 {
+		 if(inds2[i]==0)
+			 continue;
+		 sc2.NNN(&potentialPoints.points[i],searchinds,tol,false);
+
+		 pcl::PointCloud<pcl::PointXYZ> neighbourCloud;
+		 for(int j=0;j<searchinds.size();++j)
+		 {
+			 neighbourCloud.points.push_back(potentialPoints.points[searchinds[j]]);
+		 }
+
+		 Eigen::Vector4f direction;
+		 Eigen::Vector3f eigen_values;
+		 Eigen::Matrix3f eigen_vectors;
+		 Eigen::Matrix3f cov;
+		 Eigen::Vector4f centroid;
+		 pcl::compute3DCentroid(neighbourCloud,centroid);
+		 pcl::computeCovarianceMatrixNormalized(neighbourCloud,centroid,cov);
+		 pcl::eigen33(cov,eigen_vectors,eigen_values);
+		 direction(0)=eigen_vectors (0, 2);
+		 direction(1)=eigen_vectors (1, 2);
+		 direction(2)=eigen_vectors (2, 2);
+
+		 double dotValue=direction.dot(handDirection);
+
+		 if(dotValue<0.5)
+		 {
+			 inds.push_back(i);
+
+			/* if(dotValue<0.5)
+				 label=0;
+			 else*/
+				 label=1;
+			 for(int j=0;j<searchinds.size();++j)
+				 inds2[searchinds[j]]=label;
+		 }
+	 }
+
+	 for(int i=0;i<potentialPoints.points.size();++i)
+	 {
+		 if(inds2[i]==-1)
+			 inds3.push_back(i);
+	 }
+
+	 //getSubCloud(digitsCloud,inds,palm,true);
+	 palm->points.swap(palmCloud->points);
 	 getSubCloud(digitsCloud,inds3,digits,true);
  }
 
@@ -1776,14 +1908,10 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	
 	 double cos=direction.dot(handDirection);
 	 return cos;
-	/*if(cos>0)
-		return true;
-	else
-		return false;
- }*/
+
  }
 
- double PointCloud::checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
+ double PointCloud::checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud,Eigen::Vector3f* fingerDirection)
  {
 	 Eigen::Vector4f centroid;
 	 Eigen::Vector4f direction;
@@ -1809,6 +1937,11 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 	 Eigen::Vector4f distanceVector=nearestPoint-handPoints[0];
 	 double distance=distanceVector(0)*distanceVector(0)+distanceVector(1)*distanceVector(1)+distanceVector(2)*distanceVector(2);
 	 distance=std::pow(distance,0.5);
+
+	 (*fingerDirection)(0)=direction(0);
+	 (*fingerDirection)(1)=direction(1);
+	 (*fingerDirection)(2)=direction(2);
+
 	 return distance;
 	/* Eigen::Vector4f distanceVector=centroid-handPoints[0];
 	 return distanceVector.norm();*/
