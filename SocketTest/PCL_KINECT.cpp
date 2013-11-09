@@ -466,6 +466,18 @@ void getFingerInput(FingerStruct& fingerStruct,Leap::Finger finger)
 	fingerStruct.fingerOrientation.z=finger.direction().z;
 }
 
+void getFingerInput(FingerStruct& fingerStruct, pcl::PointXYZ* finger, int handId,Eigen::Vector3f fingerOrientation)
+{
+	fingerStruct.valid=true;
+	fingerStruct.handId=handId;
+	fingerStruct.fingerPosition.x=finger->x;
+	fingerStruct.fingerPosition.y=finger->y;
+	fingerStruct.fingerPosition.z=finger->z;
+	fingerStruct.fingerOrientation.x=fingerOrientation(0);
+	fingerStruct.fingerOrientation.y=fingerOrientation(1);
+	fingerStruct.fingerOrientation.z=fingerOrientation(2);
+}
+
 void getHandInput(HandStruct& handStruct,Leap::Hand hand)
 {
 	handStruct.valid=true;
@@ -499,6 +511,7 @@ void getRightHandInput(HandStruct& rightHandStruct,KinectOpenNI& kinectOpenNI)
 	rightHandStruct.handPosition.y=kinectOpenNI.getRightHand().y;
 	rightHandStruct.handPosition.z=kinectOpenNI.getRightHand().z;
 }
+
 
 void getLeftHandInput(HandStruct& leftHandStruct,KinectOpenNI& kinectOpenNI)
 {
@@ -544,7 +557,7 @@ int main( int argc, char** argv )
 	//Client socket
 	SocketClient client;
 	//bool connection=client.ConnectToHost(8000,"192.168.193.200");
-	//bool connection=client.ConnectToHost(8000,"192.168.1.3");
+	bool connection=client.ConnectToHost(8000,"192.168.1.2");
 
 	//Create KinectOpenNI engine.
 	KinectOpenNI kinectOpenNI;
@@ -602,7 +615,7 @@ int main( int argc, char** argv )
 	//Add event listener to the controller.
 	controller.addListener(leapListener);
 
-	while(key!=27/*&&connection==true*/)
+	while(key!=27&&connection==true)
 	{
 
 		//Update kinect for each frame.
@@ -614,7 +627,571 @@ int main( int argc, char** argv )
 
 		frameCount++;
 
-		char headByte[headStructSize];
+	
+		//////////Image processing
+		cv::Mat grad_x, grad_y;
+		cv::Mat abs_grad_x,abs_grad_y;
+		cv::Mat derivative;
+		cv::Mat forthGroundDepth;
+		cv::Mat leftHandMat,rightHandMat;
+		cv::Mat hands;
+		cv::Mat rawLeftHand,rawRightHand;
+
+		int scale=1;
+		int delta=0;
+		int ddepth=CV_16S;
+
+		
+		depthImage.copyTo(forthGroundDepth);
+		rawDepthImage.copyTo(rawLeftHand);
+		rawDepthImage.copyTo(rawRightHand);
+
+		for(int i=0;i<forthGroundDepth.size().height;i++)
+		{
+			for(int j=0;j<forthGroundDepth.size().width;j++)
+			{
+				if(forthGroundDepth.at<uchar>(i,j)>180)
+				{
+					forthGroundDepth.at<uchar>(i,j)=0;	
+					rawLeftHand.at<unsigned short>(i,j)=0;
+					rawRightHand.at<unsigned short>(i,j)=0;
+				}			
+			}
+		}
+
+
+		forthGroundDepth.copyTo(leftHandMat);
+		forthGroundDepth.copyTo(rightHandMat);
+
+		
+		if(userFound==true)
+		{
+			XnPoint3D imageHead=kinectOpenNI.getImageHead();
+			XnPoint3D imageRightHand=kinectOpenNI.getImageRightHand();
+			XnPoint3D imageLeftHand=kinectOpenNI.getImageLeftHand();
+			
+			for(int i=0;i<480;i++)
+			{
+				for(int j=0;j<640;j++)
+				{
+					bool leftCheck=false;
+					bool rightCheck=false;
+
+					if(i<imageRightHand.Y+50&&i>imageRightHand.Y-50&&j<imageRightHand.X+50&&j>imageRightHand.X-50)
+						rightCheck=true;
+					if(i<imageLeftHand.Y+50&&i>imageLeftHand.Y-50&&j<imageLeftHand.X+50&&j>imageLeftHand.X-50)
+						leftCheck=true;
+
+					if(leftCheck==false)
+					{
+						leftHandMat.at<unsigned char>(i,j)=0;
+						rawLeftHand.at<unsigned short>(i,j)=0;
+					}
+						
+					if(rightCheck==false)
+					{
+						rightHandMat.at<unsigned char>(i,j)=0;
+						rawRightHand.at<unsigned short>(i,j)=0;
+					}
+						
+				}
+			}
+
+			pointCloud.createCloudXYZ(&rawLeftHand);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr leftCloudDownSample=pointCloud.downSampling(pointCloud.getCloudXYZ(),2.0f,2.0f,2.0f);
+			
+			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialLeftHand=pointCloud.searchNeighbourKdTreeRadius(leftCloudDownSample,250.0f,&kinectOpenNI.getLeftHand());
+			pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud(new pcl::PointCloud<pcl::PointXYZ>);;
+			pcl::PointXYZ leftElbow;
+			if(potentialLeftHand->size()!=0)
+			{
+				if(pointCloud.getNearBlobs2(potentialLeftHand,leftHandCloud)==false)
+				{
+					pointCloud.setArmCenter(&leftElbow,0);
+				}
+			}
+
+			pointCloud.getEigens(leftHandCloud,PointCloud::LeftHand);
+
+			pcl::PointCloud<pcl::PointXYZ>::Ptr palm(new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr digits(new pcl::PointCloud<pcl::PointXYZ>); 
+			pcl::PointCloud<pcl::PointXYZ>::Ptr digitsForthPart(new pcl::PointCloud<pcl::PointXYZ>); 
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr normalHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr densityHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
+			pcl::PointCloud<pcl::PointXYZ>::Ptr indexFinger(new pcl::PointCloud<pcl::PointXYZ>);
+			/////////////////covariance filter
+			//if(key=='a')
+			//{
+			//	tolerance++;
+			//	std::cout<<tolerance<<std::endl;
+			//}
+			//if(key=='z')
+			//{
+			//	tolerance--;
+			//	std::cout<<tolerance<<std::endl;
+			//}
+
+			//if(key=='q')
+			//{
+			//	octreeResolution++;
+			//	std::cout<<octreeResolution<<std::endl;
+			//}
+			//if(key=='s')
+			//{
+			//	octreeResolution--;
+			//	std::cout<<octreeResolution<<std::endl;
+			//}
+
+			//if(key=='w')
+			//{
+			//	octreeRadius++;
+			//	std::cout<<octreeRadius<<std::endl;
+			//}
+			//if(key=='x')
+			//{
+			//	octreeRadius--;
+			//	std::cout<<octreeRadius<<std::endl;
+			//}
+			//////////////////////////
+
+
+
+			if(key=='a')
+			{
+				octreeResolution+=1;
+				std::cout<<octreeResolution<<std::endl;
+			}
+			if(key=='z')
+			{
+				octreeResolution-=1;
+				std::cout<<octreeResolution<<std::endl;
+			}
+
+			if(key=='q')
+			{
+				palmRadius++;
+				std::cout<<palmRadius<<std::endl;
+			}
+			if(key=='s')
+			{
+				palmRadius--;
+				std::cout<<palmRadius<<std::endl;
+			}
+
+			if(key=='w')
+			{
+				radius++;
+				std::cout<<radius<<std::endl;
+			}
+			if(key=='x')
+			{
+				radius--;
+				std::cout<<radius<<std::endl;
+			}
+
+			if(key=='c')
+			{
+				clustertol++;
+				std::cout<<clustertol<<std::endl;
+			}
+			if(key=='v')
+			{
+				clustertol--;
+				std::cout<<clustertol<<std::endl;
+			}
+
+			if(key=='b')
+			{
+				mincluster++;
+				std::cout<<mincluster<<std::endl;
+			}
+			if(key=='n')
+			{
+				mincluster--;
+				std::cout<<mincluster<<std::endl;
+			}
+
+			
+
+			pcl::PointXYZ center;
+			//Find potential digits cloud
+			pointCloud.radiusFilter(leftHandCloud,octreeResolution,palmRadius,0,digits,&center);
+
+			pcl::PointXYZRGBA handCenter;
+			handCenter.x=pointCloud.getHandCenter()(0);
+			handCenter.y=pointCloud.getHandCenter()(1);
+			handCenter.z=pointCloud.getHandCenter()(2);
+			handCenter.r=100;
+			handCenter.g=50;
+			handCenter.b=200;
+			densityHand->points.push_back(handCenter);
+
+			Eigen::Vector3f newDirection;
+			newDirection(0)=pointCloud.getHandDirection()(0);
+			newDirection(1)=pointCloud.getHandDirection()(1);
+			newDirection(2)=pointCloud.getHandDirection()(2);
+
+			//Check hand direction
+			Eigen::Vector3f newCenter;
+			newCenter(0)=handCenter.x;
+			newCenter(1)=handCenter.y;
+			newCenter(2)=handCenter.z;
+
+			Eigen::Vector3f dir1=newCenter+newDirection;
+			Eigen::Vector3f dir2=newCenter-newDirection;
+
+			if(dir2.dot(dir2)<dir1.dot(dir1))
+				newDirection=-newDirection;
+
+			//Remove back part of digits cloud
+			for(int i=0;i<digits->size();++i)
+			{
+				Eigen::Vector3f pointDirection;
+				pointDirection(0)=digits->at(i).x-(center.x-30*newDirection(0));
+				pointDirection(1)=digits->at(i).y-(center.y-30*newDirection(1));
+				pointDirection(2)=digits->at(i).z-(center.z-30*newDirection(2));
+	
+				if(newDirection.dot(pointDirection)<0)
+					continue;
+
+				/*int density=pointCloud.searchNeighbourOctreeRadius(digits,30,radius,&digits->at(i))->size();
+			
+				if(density<30)
+					continue;*/
+
+				digitsForthPart->push_back(digits->at(i));
+			}
+
+
+			//for(int i=0;i<digits->size();++i)
+			//{
+			//	int density=pointCloud.searchNeighbourOctreeRadius(digits,30,radius,&digits->at(i))->size();
+			//	pcl::PointXYZRGBA point;
+			//	point.x=digits->at(i).x;
+			//	point.y=digits->at(i).y;
+			//	point.z=digits->at(i).z;
+
+			//	point.r=0;
+			//	point.g=0;
+			//	point.b=0;
+			//	point.a=0;
+
+			//	Eigen::Vector3f pointDirection;
+			//	pointDirection(0)=point.x-center.x;
+			//	pointDirection(1)=point.y-center.y;
+			//	pointDirection(2)=point.z-center.z;
+			//
+			//	
+			//	
+			//	if(newDirection.dot(pointDirection)<0)
+			//		continue;
+
+			//	if(density<20)
+			//	{
+			//		point.r=255;
+			//		continue;
+			//	}
+			//		
+			//	if(density>=20&&density<40)
+			//	{
+			//		point.g=255;
+			//		//continue;
+			//	}
+			//		
+			//	if(density>=40&&density<60)
+			//		point.b=255;
+			//	if(density>=60&&density<80)
+			//	{
+			//		point.r=255;
+			//		point.g=255;
+			//	}
+			//	if(density>=80&&density<100)
+			//	{
+			//		point.r=255;
+			//		point.b=255;
+			//	}
+			//	if(density>=100&&density<120)
+			//	{
+			//		point.g=255;
+			//		point.b=255;
+			//	}
+
+			//	densityHand->push_back(point);
+			//}
+
+
+			std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>fingers;
+			if(digitsForthPart->points.size()!=0)
+			{
+				//Segmentation of fingers
+				fingers=pointCloud.segFingers(digitsForthPart,clustertol,mincluster);//5,20
+			}
+
+			
+			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
+
+			std::vector<Eigen::Vector3f> fingersDirection;
+			fingersDirection.resize(fingers.size());
+
+			double maxDistance=0;
+			int indexFingerIndex=-1;
+			
+				for(int i=0;i<fingers.size();++i)
+				{
+					//If the finger tip is not far enough to the center, pass it
+					double distance=pointCloud.checkFingerDistance(fingers[i],&fingersDirection[i]);
+					if(distance>maxDistance)
+					{
+						maxDistance=distance;
+						indexFingerIndex=i;
+						
+					}
+						
+					std::cout<<"Finger"<<i<<":"<<fingers[i]->size()<<std::endl;
+					/*std::cout<<"Finger"<<i<<":"<<distance;
+					if(i==fingers.size()-1)
+						std::cout<<std::endl;*/
+					if(newDirection.dot(fingersDirection[i])<0.55)
+						continue;
+
+					/*if(distance<70)
+					{
+						int a=1;
+						continue;
+					}
+						*/
+				
+
+					switch(i)
+					{
+					case 0:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,0));
+						break;
+					case 1:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,0));
+						break;
+					case 2:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,0,255));
+						break;
+					case 3:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,0));
+						break;
+					case 4:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,255));
+						break;
+					case 5:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,255));
+						break;
+					case 6:
+						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
+						break;
+					}
+				}
+
+				
+
+				if(indexFingerIndex!=-1)
+				{
+					Eigen::Vector3f indexDirection;
+					pcl::PointXYZ camera;
+					camera.x=0;
+					camera.y=0;
+					camera.z=0;
+					pcl::PointCloud<pcl::PointXYZ>::Ptr neighbour=pointCloud.searchNeighbourKdTreeKNeighbour(fingers[indexFingerIndex],1,&camera);
+					pcl::PointCloud<pcl::PointXYZ>::Ptr indexTip=pointCloud.searchNeighbourKdTreeKNeighbour(fingers[indexFingerIndex],200,&neighbour->at(0));
+					pointCloud.checkFingerDistance(indexTip,&indexDirection);
+
+					//Draw hand direction
+					for(int i=0;i<50;++i)
+					{
+						pcl::PointXYZ point;
+						point.x=neighbour->at(0).x+i*indexDirection(0);
+						point.y=neighbour->at(0).y+i*indexDirection(1);
+						point.z=neighbour->at(0).z+i*indexDirection(2);
+
+						indexFinger->points.push_back(point);
+					}
+
+					if(maxDistance>70)
+					{
+						for(int j=0;j<indexTip->size();++j)
+						{
+							indexFinger->push_back(indexTip->at(j));
+						}
+					}
+				}
+				
+				//Add finger cloud to color hand cloud
+				for(int i=0;i<colorFingers.size();++i)
+				{
+					for(int j=0;j<colorFingers[i]->points.size();++j)
+					{
+						densityHand->points.push_back(colorFingers[i]->points[j]);
+					}
+				}
+
+
+			//Draw hand direction
+			for(int i=0;i<50;++i)
+			{
+				pcl::PointXYZRGBA point;
+				point.x=handCenter.x+i*newDirection(0);
+				point.y=handCenter.y+i*newDirection(1);
+				point.z=handCenter.z+i*newDirection(2);
+				point.r=100;
+				point.g=50;
+				point.b=200;
+				densityHand->points.push_back(point);
+			}
+
+			
+			////////////////normal image
+			/*pcl::NormalEstimation<pcl::PointXYZ,pcl::Normal> ne;
+			ne.setInputCloud(leftHandCloud);
+
+			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+			ne.setSearchMethod(tree);
+
+			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+			ne.setRadiusSearch(normalRadius);
+			ne.compute(*cloud_normals);
+
+			Eigen::Vector4f handDirection=pointCloud.getHandDirection();
+			handDirection(3)=0;
+			for(int i=0;i<leftHandCloud->size();++i)
+			{
+				Eigen::Vector4f pointNormal;
+				pointNormal(0)=cloud_normals->at(i).normal_x;
+				pointNormal(1)=cloud_normals->at(i).normal_y;
+				pointNormal(2)=cloud_normals->at(i).normal_z;
+				pointNormal(3)=0;
+				
+				double dotValue=handDirection.dot(pointNormal);
+				
+				pcl::PointXYZRGBA point;
+				if(dotValue>0.7)
+				{
+					point.x=leftHandCloud->at(i).x;
+					point.y=leftHandCloud->at(i).y;
+					point.z=leftHandCloud->at(i).z;
+					point.r=255;
+					point.g=0;
+					point.b=0;
+					point.a=0;
+				}
+
+				if(dotValue>0.4&&dotValue<=0.7)
+				{
+					point.x=leftHandCloud->at(i).x;
+					point.y=leftHandCloud->at(i).y;
+					point.z=leftHandCloud->at(i).z;
+					point.r=0;
+					point.g=255;
+					point.b=0;
+					point.a=0;
+				}
+
+				if(dotValue<=0.4&&dotValue>0.2)
+				{
+					point.x=leftHandCloud->at(i).x;
+					point.y=leftHandCloud->at(i).y;
+					point.z=leftHandCloud->at(i).z;
+					point.r=0;
+					point.g=0;
+					point.b=255;
+					point.a=0;
+				}
+
+				if(dotValue<=0.2)
+					{
+					point.x=leftHandCloud->at(i).x;
+					point.y=leftHandCloud->at(i).y;
+					point.z=leftHandCloud->at(i).z;
+					point.r=255;
+					point.g=0;
+					point.b=255;
+					point.a=0;
+				}
+
+				normalHand->push_back(point);
+			}*/
+			///////////////////////////
+
+
+
+
+			switch(key)
+			{
+			case '1':
+				mode=1;
+				break;
+			case '2':
+				mode=2;
+				break;
+			case '3':
+				mode=3;
+				break;
+			case '4':
+				mode=4;
+				break;
+			case '5':
+				mode=5;
+				break;
+			}
+
+			
+
+			switch(mode)
+			{
+			case 1:
+				cloudViewer.showCloud(leftCloudDownSample);
+				break;
+			case 2:
+				cloudViewer.showCloud(leftHandCloud);
+				break;
+			case 3:
+				cloudViewer.showCloud(digitsForthPart);
+				break;
+			case 4:
+				//cloudViewer.showCloud(colorHand);
+				cloudViewer.showCloud(densityHand);
+				break;
+			case 5:
+				//cloudViewer.showCloud(colorHand);
+				cloudViewer.showCloud(indexFinger);
+				break;
+				
+			}
+			
+
+		
+		
+		}
+
+		
+		
+
+		Sobel(forthGroundDepth,grad_x,ddepth,1,0,3,scale, delta, cv::BORDER_DEFAULT );
+		convertScaleAbs(grad_x,abs_grad_x);
+
+		Sobel(forthGroundDepth, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT );
+		convertScaleAbs( grad_y, abs_grad_y );
+
+		addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, derivative );
+		addWeighted(leftHandMat,0.5,rightHandMat,0.5,0,hands);
+
+
+		
+
+		//Display depth and color image.
+		cv::imshow("depth",forthGroundDepth);
+		cv::imshow("image",colorImage);
+		cv::imshow("derivative",derivative);
+		cv::imshow("hands",hands);
+		///////////////
+
+	
+			char headByte[headStructSize];
 		char rightHandByte[handStructSize];
 		char leftHandByte[handStructSize];
 		char handsByte[handStructSize*2];
@@ -926,675 +1503,7 @@ int main( int argc, char** argv )
 
 
 		
-		//////////Image processing
-		cv::Mat grad_x, grad_y;
-		cv::Mat abs_grad_x,abs_grad_y;
-		cv::Mat derivative;
-		cv::Mat forthGroundDepth;
-		cv::Mat leftHandMat,rightHandMat;
-		cv::Mat hands;
-		cv::Mat rawLeftHand,rawRightHand;
 
-		int scale=1;
-		int delta=0;
-		int ddepth=CV_16S;
-
-		
-		depthImage.copyTo(forthGroundDepth);
-		rawDepthImage.copyTo(rawLeftHand);
-		rawDepthImage.copyTo(rawRightHand);
-
-		for(int i=0;i<forthGroundDepth.size().height;i++)
-		{
-			for(int j=0;j<forthGroundDepth.size().width;j++)
-			{
-				if(forthGroundDepth.at<uchar>(i,j)>180)
-				{
-					forthGroundDepth.at<uchar>(i,j)=0;	
-					rawLeftHand.at<unsigned short>(i,j)=0;
-					rawRightHand.at<unsigned short>(i,j)=0;
-				}			
-			}
-		}
-
-
-		forthGroundDepth.copyTo(leftHandMat);
-		forthGroundDepth.copyTo(rightHandMat);
-
-		
-		if(userFound==true)
-		{
-			XnPoint3D imageHead=kinectOpenNI.getImageHead();
-			XnPoint3D imageRightHand=kinectOpenNI.getImageRightHand();
-			XnPoint3D imageLeftHand=kinectOpenNI.getImageLeftHand();
-			
-			for(int i=0;i<480;i++)
-			{
-				for(int j=0;j<640;j++)
-				{
-					bool leftCheck=false;
-					bool rightCheck=false;
-
-					if(i<imageRightHand.Y+50&&i>imageRightHand.Y-50&&j<imageRightHand.X+50&&j>imageRightHand.X-50)
-						rightCheck=true;
-					if(i<imageLeftHand.Y+50&&i>imageLeftHand.Y-50&&j<imageLeftHand.X+50&&j>imageLeftHand.X-50)
-						leftCheck=true;
-
-					if(leftCheck==false)
-					{
-						leftHandMat.at<unsigned char>(i,j)=0;
-						rawLeftHand.at<unsigned short>(i,j)=0;
-					}
-						
-					if(rightCheck==false)
-					{
-						rightHandMat.at<unsigned char>(i,j)=0;
-						rawRightHand.at<unsigned short>(i,j)=0;
-					}
-						
-				}
-			}
-
-			/*leftPointCloud.createCloudXYZRGBA(&rawLeftHand,kinectOpenNI.getImageData());
-			rightPointCloud.createCloudXYZRGBA(&rawRightHand,kinectOpenNI.getImageData());*/
-
-			pointCloud.createCloudXYZ(&rawLeftHand);
-			pcl::PointCloud<pcl::PointXYZ>::Ptr leftCloudDownSample=pointCloud.downSampling(pointCloud.getCloudXYZ(),2.0f,2.0f,2.0f);
-			
-			pcl::PointCloud<pcl::PointXYZ>::Ptr potentialLeftHand=pointCloud.searchNeighbourKdTreeRadius(leftCloudDownSample,250.0f,&kinectOpenNI.getLeftHand());
-			pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud(new pcl::PointCloud<pcl::PointXYZ>);;
-			pcl::PointXYZ leftElbow;
-			if(potentialLeftHand->size()!=0)
-			{
-				if(pointCloud.getNearBlobs2(potentialLeftHand,leftHandCloud)==false)
-				{
-					pointCloud.setArmCenter(&leftElbow,0);
-				}
-			}
-
-			pointCloud.getEigens(leftHandCloud,PointCloud::LeftHand);
-
-			pcl::PointCloud<pcl::PointXYZ>::Ptr palm(new pcl::PointCloud<pcl::PointXYZ>);
-			pcl::PointCloud<pcl::PointXYZ>::Ptr digits(new pcl::PointCloud<pcl::PointXYZ>); 
-			pcl::PointCloud<pcl::PointXYZ>::Ptr digitsForthPart(new pcl::PointCloud<pcl::PointXYZ>); 
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr normalHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr densityHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			pcl::PointCloud<pcl::PointXYZ>::Ptr indexFinger(new pcl::PointCloud<pcl::PointXYZ>);
-			/////////////////covariance filter
-			//if(key=='a')
-			//{
-			//	tolerance++;
-			//	std::cout<<tolerance<<std::endl;
-			//}
-			//if(key=='z')
-			//{
-			//	tolerance--;
-			//	std::cout<<tolerance<<std::endl;
-			//}
-
-			//if(key=='q')
-			//{
-			//	octreeResolution++;
-			//	std::cout<<octreeResolution<<std::endl;
-			//}
-			//if(key=='s')
-			//{
-			//	octreeResolution--;
-			//	std::cout<<octreeResolution<<std::endl;
-			//}
-
-			//if(key=='w')
-			//{
-			//	octreeRadius++;
-			//	std::cout<<octreeRadius<<std::endl;
-			//}
-			//if(key=='x')
-			//{
-			//	octreeRadius--;
-			//	std::cout<<octreeRadius<<std::endl;
-			//}
-			//////////////////////////
-
-
-
-			if(key=='a')
-			{
-				octreeResolution+=1;
-				std::cout<<octreeResolution<<std::endl;
-			}
-			if(key=='z')
-			{
-				octreeResolution-=1;
-				std::cout<<octreeResolution<<std::endl;
-			}
-
-			if(key=='q')
-			{
-				palmRadius++;
-				std::cout<<palmRadius<<std::endl;
-			}
-			if(key=='s')
-			{
-				palmRadius--;
-				std::cout<<palmRadius<<std::endl;
-			}
-
-			if(key=='w')
-			{
-				radius++;
-				std::cout<<radius<<std::endl;
-			}
-			if(key=='x')
-			{
-				radius--;
-				std::cout<<radius<<std::endl;
-			}
-
-			if(key=='c')
-			{
-				clustertol++;
-				std::cout<<clustertol<<std::endl;
-			}
-			if(key=='v')
-			{
-				clustertol--;
-				std::cout<<clustertol<<std::endl;
-			}
-
-			if(key=='b')
-			{
-				mincluster++;
-				std::cout<<mincluster<<std::endl;
-			}
-			if(key=='n')
-			{
-				mincluster--;
-				std::cout<<mincluster<<std::endl;
-			}
-
-			
-
-			pcl::PointXYZ center;
-			//Find potential digits cloud
-			pointCloud.radiusFilter(leftHandCloud,octreeResolution,palmRadius,0,digits,&center);
-
-			pcl::PointXYZRGBA handCenter;
-			handCenter.x=pointCloud.getHandCenter()(0);
-			handCenter.y=pointCloud.getHandCenter()(1);
-			handCenter.z=pointCloud.getHandCenter()(2);
-			handCenter.r=100;
-			handCenter.g=50;
-			handCenter.b=200;
-			densityHand->points.push_back(handCenter);
-
-			Eigen::Vector3f newDirection;
-			newDirection(0)=pointCloud.getHandDirection()(0);
-			newDirection(1)=pointCloud.getHandDirection()(1);
-			newDirection(2)=pointCloud.getHandDirection()(2);
-
-			//Check hand direction
-			Eigen::Vector3f newCenter;
-			newCenter(0)=handCenter.x;
-			newCenter(1)=handCenter.y;
-			newCenter(2)=handCenter.z;
-
-			Eigen::Vector3f dir1=newCenter+newDirection;
-			Eigen::Vector3f dir2=newCenter-newDirection;
-
-			if(dir2.dot(dir2)<dir1.dot(dir1))
-				newDirection=-newDirection;
-
-			//Remove back part of digits cloud
-			for(int i=0;i<digits->size();++i)
-			{
-				Eigen::Vector3f pointDirection;
-				pointDirection(0)=digits->at(i).x-(center.x-30*newDirection(0));
-				pointDirection(1)=digits->at(i).y-(center.y-30*newDirection(1));
-				pointDirection(2)=digits->at(i).z-(center.z-30*newDirection(2));
-	
-				if(newDirection.dot(pointDirection)<0)
-					continue;
-
-				/*int density=pointCloud.searchNeighbourOctreeRadius(digits,30,radius,&digits->at(i))->size();
-			
-				if(density<30)
-					continue;*/
-
-				digitsForthPart->push_back(digits->at(i));
-			}
-
-
-			//for(int i=0;i<digits->size();++i)
-			//{
-			//	int density=pointCloud.searchNeighbourOctreeRadius(digits,30,radius,&digits->at(i))->size();
-			//	pcl::PointXYZRGBA point;
-			//	point.x=digits->at(i).x;
-			//	point.y=digits->at(i).y;
-			//	point.z=digits->at(i).z;
-
-			//	point.r=0;
-			//	point.g=0;
-			//	point.b=0;
-			//	point.a=0;
-
-			//	Eigen::Vector3f pointDirection;
-			//	pointDirection(0)=point.x-center.x;
-			//	pointDirection(1)=point.y-center.y;
-			//	pointDirection(2)=point.z-center.z;
-			//
-			//	
-			//	
-			//	if(newDirection.dot(pointDirection)<0)
-			//		continue;
-
-			//	if(density<20)
-			//	{
-			//		point.r=255;
-			//		continue;
-			//	}
-			//		
-			//	if(density>=20&&density<40)
-			//	{
-			//		point.g=255;
-			//		//continue;
-			//	}
-			//		
-			//	if(density>=40&&density<60)
-			//		point.b=255;
-			//	if(density>=60&&density<80)
-			//	{
-			//		point.r=255;
-			//		point.g=255;
-			//	}
-			//	if(density>=80&&density<100)
-			//	{
-			//		point.r=255;
-			//		point.b=255;
-			//	}
-			//	if(density>=100&&density<120)
-			//	{
-			//		point.g=255;
-			//		point.b=255;
-			//	}
-
-			//	densityHand->push_back(point);
-			//}
-
-
-			std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>fingers;
-			if(digitsForthPart->points.size()!=0)
-			{
-				//Segmentation of fingers
-				fingers=pointCloud.segFingers(digitsForthPart,clustertol,mincluster);//5,20
-			}
-
-			
-			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
-
-			std::vector<Eigen::Vector3f> fingersDirection;
-			fingersDirection.resize(fingers.size());
-
-			double maxDistance=0;
-			int indexFingerIndex;
-				for(int i=0;i<fingers.size();++i)
-				{
-					//If the finger tip is not far enough to the center, pass it
-					double distance=pointCloud.checkFingerDistance(fingers[i],&fingersDirection[i]);
-					if(distance>maxDistance)
-					{
-						maxDistance=distance;
-						indexFingerIndex=i;
-					}
-						
-					std::cout<<"Finger"<<i<<":"<<fingers[i]->size()<<std::endl;
-					/*std::cout<<"Finger"<<i<<":"<<distance;
-					if(i==fingers.size()-1)
-						std::cout<<std::endl;*/
-					if(newDirection.dot(fingersDirection[i])<0.55)
-						continue;
-
-					/*if(distance<70)
-					{
-						int a=1;
-						continue;
-					}
-						*/
-				
-
-					switch(i)
-					{
-					case 0:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,0));
-						break;
-					case 1:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,0));
-						break;
-					case 2:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,0,255));
-						break;
-					case 3:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,0));
-						break;
-					case 4:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,255));
-						break;
-					case 5:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,255));
-						break;
-					case 6:
-						colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
-						break;
-					}
-				}
-
-				if(maxDistance>70)
-				{
-					for(int j=0;j<fingers[indexFingerIndex]->size();++j)
-					{
-						indexFinger->push_back(fingers[indexFingerIndex]->at(j));
-					}
-				}
-				//Add finger cloud to color hand cloud
-				for(int i=0;i<colorFingers.size();++i)
-				{
-					for(int j=0;j<colorFingers[i]->points.size();++j)
-					{
-						densityHand->points.push_back(colorFingers[i]->points[j]);
-					}
-				}
-
-
-			//Draw hand direction
-			for(int i=0;i<50;++i)
-			{
-				pcl::PointXYZRGBA point;
-				point.x=handCenter.x+i*newDirection(0);
-				point.y=handCenter.y+i*newDirection(1);
-				point.z=handCenter.z+i*newDirection(2);
-				point.r=100;
-				point.g=50;
-				point.b=200;
-				densityHand->points.push_back(point);
-			}
-
-			
-			////////////////normal image
-			/*pcl::NormalEstimation<pcl::PointXYZ,pcl::Normal> ne;
-			ne.setInputCloud(leftHandCloud);
-
-			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-			ne.setSearchMethod(tree);
-
-			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setRadiusSearch(normalRadius);
-			ne.compute(*cloud_normals);
-
-			Eigen::Vector4f handDirection=pointCloud.getHandDirection();
-			handDirection(3)=0;
-			for(int i=0;i<leftHandCloud->size();++i)
-			{
-				Eigen::Vector4f pointNormal;
-				pointNormal(0)=cloud_normals->at(i).normal_x;
-				pointNormal(1)=cloud_normals->at(i).normal_y;
-				pointNormal(2)=cloud_normals->at(i).normal_z;
-				pointNormal(3)=0;
-				
-				double dotValue=handDirection.dot(pointNormal);
-				
-				pcl::PointXYZRGBA point;
-				if(dotValue>0.7)
-				{
-					point.x=leftHandCloud->at(i).x;
-					point.y=leftHandCloud->at(i).y;
-					point.z=leftHandCloud->at(i).z;
-					point.r=255;
-					point.g=0;
-					point.b=0;
-					point.a=0;
-				}
-
-				if(dotValue>0.4&&dotValue<=0.7)
-				{
-					point.x=leftHandCloud->at(i).x;
-					point.y=leftHandCloud->at(i).y;
-					point.z=leftHandCloud->at(i).z;
-					point.r=0;
-					point.g=255;
-					point.b=0;
-					point.a=0;
-				}
-
-				if(dotValue<=0.4&&dotValue>0.2)
-				{
-					point.x=leftHandCloud->at(i).x;
-					point.y=leftHandCloud->at(i).y;
-					point.z=leftHandCloud->at(i).z;
-					point.r=0;
-					point.g=0;
-					point.b=255;
-					point.a=0;
-				}
-
-				if(dotValue<=0.2)
-					{
-					point.x=leftHandCloud->at(i).x;
-					point.y=leftHandCloud->at(i).y;
-					point.z=leftHandCloud->at(i).z;
-					point.r=255;
-					point.g=0;
-					point.b=255;
-					point.a=0;
-				}
-
-				normalHand->push_back(point);
-			}*/
-			///////////////////////////
-
-
-
-			//pointCloud.normalFilter(leftHandCloud,PointCloud::LeftHand,normalRadius,digits);
-			//pointCloud.radiusFilter(leftHandCloud,nnThresh,tolerance,PointCloud::LeftHand,palm,digits);
-			//pointCloud.covarianceFilter(leftHandCloud,tolerance,PointCloud::LeftHand,octreeResolution,octreeRadius,palm,digits);
-			
-			//std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>fingers;
-			//if(digits->points.size()!=0)
-			//{
-			//	//Segmentation of fingers
-			//	fingers=pointCloud.segFingers(digits,7,20);//5,20
-			//}
-
-			//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr colorHand(new pcl::PointCloud<pcl::PointXYZRGBA>);
-			//std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>colorFingers;
-
-
-			//	for(int i=0;i<fingers.size();++i)
-			//	{
-			//		/*if(pointCloud.checkFinger(fingers[i])==false)
-			//		continue;*/
-
-
-			//		/*if(pointCloud.checkFinger(fingers[i])<0.86)
-			//		continue;*/
-			//		//If the finger tip is not far enough to the center, pass it
-			//		double distance=pointCloud.checkFingerDistance(fingers[i]);
-			//		if(distance<70)
-			//			continue;
-			//		std::cout<<distance<<" "<<i<<std::endl;
-			//		std::cout<<std::endl;
-
-			//		switch(i)
-			//		{
-			//		case 0:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,0));
-			//			break;
-			//		case 1:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,0));
-			//			break;
-			//		case 2:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,0,255));
-			//			break;
-			//		case 3:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,0));
-			//			break;
-			//		case 4:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],0,255,255));
-			//			break;
-			//		case 5:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,0,255));
-			//			break;
-			//		case 6:
-			//			colorFingers.push_back(pointCloud.getColorPointCloud(fingers[i],255,255,255));
-			//			break;
-			//		}
-			//	}
-
-
-			//	//Add finger cloud to color hand cloud
-			//	for(int i=0;i<colorFingers.size();++i)
-			//	{
-			//		for(int j=0;j<colorFingers[i]->points.size();++j)
-			//		{
-			//			colorHand->points.push_back(colorFingers[i]->points[j]);
-			//		}
-			//	}
-			//	//////////Add center and direction line
-			//	pcl::PointXYZRGBA handCenter;
-			//	handCenter.x=pointCloud.getHandCenter()(0);
-			//	handCenter.y=pointCloud.getHandCenter()(1);
-			//	handCenter.z=pointCloud.getHandCenter()(2);
-			//	handCenter.r=100;
-			//	handCenter.g=50;
-			//	handCenter.b=200;
-			//	colorHand->points.push_back(handCenter);
-
-			//	for(int i=0;i<50;++i)
-			//	{
-			//		pcl::PointXYZRGBA point;
-			//		point.x=handCenter.x+i*pointCloud.getHandDirection()(0);
-			//		point.y=handCenter.y+i*pointCloud.getHandDirection()(1);
-			//		point.z=handCenter.z+i*pointCloud.getHandDirection()(2);
-			//		point.r=100;
-			//		point.g=50;
-			//		point.b=200;
-			//		colorHand->points.push_back(point);
-			//	}
-
-			//	for(int i=0;i<fingers.size();++i)
-			//	{
-			//		double distance=pointCloud.checkFingerDistance(fingers[i]);
-			//		if(distance<70)
-			//			continue;
-			//		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLineCloud=pointCloud.getFingerLine(fingers[i]);
-			//		for(int j=0;j<fingerLineCloud->points.size();++j)
-			//		{
-			//			colorHand->points.push_back(fingerLineCloud->points[j]);
-			//		}
-			//	}
-
-			switch(key)
-			{
-			case '1':
-				mode=1;
-				break;
-			case '2':
-				mode=2;
-				break;
-			case '3':
-				mode=3;
-				break;
-			case '4':
-				mode=4;
-				break;
-			case '5':
-				mode=5;
-				break;
-			}
-
-			
-
-			switch(mode)
-			{
-			case 1:
-				cloudViewer.showCloud(leftCloudDownSample);
-				break;
-			case 2:
-				cloudViewer.showCloud(leftHandCloud);
-				break;
-			case 3:
-				cloudViewer.showCloud(digitsForthPart);
-				break;
-			case 4:
-				//cloudViewer.showCloud(colorHand);
-				cloudViewer.showCloud(densityHand);
-				break;
-			case 5:
-				//cloudViewer.showCloud(colorHand);
-				cloudViewer.showCloud(indexFinger);
-				break;
-				
-			}
-			
-
-		/*	
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr leftCloudDownSample=leftPointCloud.downSampling(pointCloud.getCloudXYZRGBA(),5.0f,5.0f,5.0f);
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr rightCloudDownSample=rightPointCloud.downSampling(pointCloud.getCloudXYZRGBA(),5.0f,5.0f,5.0f);*/
-
-			
-			
-			
-			//Create point cloud for the environment.
-		
-		////Calculate the normals
-			/*pcl::NormalEstimation<pcl::PointXYZRGBA,pcl::Normal> ne;
-			ne.setInputCloud(cloudDownSample);
-
-			pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA> ());
-			ne.setSearchMethod(tree);
-
-			pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-			ne.setRadiusSearch(5);
-			ne.compute(*cloud_normals);*/
-
-			//viewer.removeAllPointClouds();
-			//pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloudDownSample);
-			//viewer.addPointCloud<pcl::PointXYZRGBA> (cloudDownSample, rgb, "sample cloud");
-			//viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
-			//viewer.addPointCloudNormals<pcl::PointXYZRGBA, pcl::Normal> (cloudDownSample, cloud_normals, 10, 0.05, "normals");
-			////viewer.addPointCloud<pcl::PointXYZRGBA> (pointCloud.getCloudXYZRGBA(), "sample cloud");
-			//viewer.spinOnce(10);
-		
-		}
-
-		
-		
-
-		Sobel(forthGroundDepth,grad_x,ddepth,1,0,3,scale, delta, cv::BORDER_DEFAULT );
-		convertScaleAbs(grad_x,abs_grad_x);
-
-		Sobel(forthGroundDepth, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT );
-		convertScaleAbs( grad_y, abs_grad_y );
-
-		addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, derivative );
-		addWeighted(leftHandMat,0.5,rightHandMat,0.5,0,hands);
-
-
-		
-
-		//Display depth and color image.
-		cv::imshow("depth",forthGroundDepth);
-		cv::imshow("image",colorImage);
-		cv::imshow("derivative",derivative);
-		cv::imshow("hands",hands);
-		///////////////
-
-		
-		/*while (!viewer.wasStopped ())
-		{
-			viewer.spinOnce ();
-			cv::imshow("depth",depthImage);
-		cv::imshow("image",colorImage);
-		cv::imshow("derivative",derivative);
-		}*/
 
 		key=cv::waitKey(20);
 		
