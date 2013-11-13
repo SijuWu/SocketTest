@@ -1,6 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "PointCloud.h"
 
+//Convert eigen vector to pcl point
 static pcl::PointXYZ eigenToPclPoint(const Eigen::Vector4f &v){
    pcl::PointXYZ p;
    p.x=v(0); p.y=v(1); p.z=v(2);
@@ -10,11 +11,12 @@ static pcl::PointXYZ eigenToPclPoint(const Eigen::Vector4f &v){
 PointCloud::PointCloud(void)
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZPtr (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBAPtr (new pcl::PointCloud<pcl::PointXYZRGBA>);
 	cloudXYZ=cloudXYZPtr;
 	cloudXYZ->width=640;
 	cloudXYZ->height=480;
 	cloudXYZ->resize(640*480);
+
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBAPtr (new pcl::PointCloud<pcl::PointXYZRGBA>);
 	cloudXYZRGBA=cloudXYZRGBAPtr;
 	cloudXYZRGBA->width=640;
 	cloudXYZRGBA->height=480;
@@ -56,7 +58,6 @@ void PointCloud::createCloudXYZ( const XnDepthPixel* pDepth)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			/**pointPtr=(row-240)*zValue*F;*/
 			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
@@ -93,8 +94,6 @@ void PointCloud::createCloudXYZ(cv::Mat* depthImage)
 
 	for( unsigned int i =0; i < 640*480; ++i)  
 	{
-		
-
 		//Get the 2D position of each pixel
 		int row=i/640;
 		int col=i%640;
@@ -109,7 +108,6 @@ void PointCloud::createCloudXYZ(cv::Mat* depthImage)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			/**pointPtr=(row-240)*zValue*F;*/
 			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
@@ -158,7 +156,6 @@ void PointCloud::createCloudXYZRGBA( const XnDepthPixel* pDepth,const XnUInt8* p
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			/**pointPtr=(row-240)*zValue*F;*/
 			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
@@ -237,7 +234,6 @@ void PointCloud::createCloudXYZRGBA(cv::Mat* depthImage,const XnUInt8* pColor)
 			//Jump to the pointer of the y coordonate
 			pointPtr++;
 			//Set the y coordinate of the point
-			/**pointPtr=(row-240)*zValue*F;*/
 			*pointPtr=(240-row)*zValue*F;
 			//Jump to the pointer of the z coordinate
 			pointPtr++;
@@ -291,54 +287,60 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getCloudXYZRGBA()
 	return cloudXYZRGBA;
 }
 
-
-//template<typename PointT> pcl::PointCloud<PointT>::Ptr PointCloud::downSampling(pcl::PointCloud<PointT>::Ptr cloudSource,float xLeafSize,float yLeafSize, float zLeafSize)
-//{
-//	pcl::VoxelGrid<PointT> filtering;
-//	filtering.setInputCloud(cloudSource);
-//	filtering.setLeafSize(xLeafSize,yLeafSize,zLeafSize);
-//	pcl::PointCloud<PointT>::Ptr cloudXYZ_filtered (new pcl::PointCloud<PointT>);
-//	filtering.filter(*cloud_filtered);
-//	return cloud_filtered;
-//}
-
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::downSampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ,float xLeafSize,float yLeafSize, float zLeafSize)
 {
+	//Create a voxelGrid
 	pcl::VoxelGrid<pcl::PointXYZ> filtering;
 	filtering.setInputCloud(cloudXYZ);
+	//Set the size of the voxel
 	filtering.setLeafSize(xLeafSize,yLeafSize,zLeafSize);
+	//Create a filter
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+	//Filter the point cloud
 	filtering.filter(*cloudXYZ_filtered);
 	return cloudXYZ_filtered;
 }
 
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::downSampling(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA,float xLeafSize,float yLeafSize, float zLeafSize)
 {
+	//Create a voxelGrid filter
 	pcl::VoxelGrid<pcl::PointXYZRGBA> filtering;
 	filtering.setInputCloud(cloudXYZRGBA);
+	//Set the size of the voxel
 	filtering.setLeafSize(xLeafSize,yLeafSize,zLeafSize);
+	
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA_filtered (new pcl::PointCloud<pcl::PointXYZRGBA>);
+	//Filter the point cloud
 	filtering.filter(*cloudXYZRGBA_filtered);
 	return cloudXYZRGBA_filtered;
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::passThroughFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ,std::string axis,float minLimit, float maxLimit)
 {
+	//Create a passThrough filter
 	pcl::PassThrough<pcl::PointXYZ> pass;
 	pass.setInputCloud(cloudXYZ);
+	//Set the axis of the filter
 	pass.setFilterFieldName (axis);
+	//Set the limit
 	pass.setFilterLimits(minLimit,maxLimit);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudXYZ_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+	//Filter the point cloud
 	pass.filter(*cloudXYZ_filtered);
 	return cloudXYZ_filtered;
 }
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::passThroughFilter(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA,std::string axis,float minLimit, float maxLimit)
 {
+	//Create a passThrough filter
 	pcl::PassThrough<pcl::PointXYZRGBA> pass;
 	pass.setInputCloud(cloudXYZRGBA);
+	//Set the axis of the filter
 	pass.setFilterFieldName (axis);
+	//Set the limit
 	pass.setFilterLimits(minLimit,maxLimit);
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudXYZRGBA_filtered (new pcl::PointCloud<pcl::PointXYZRGBA>);
+	//Filter the point cloud
 	pass.filter(*cloudXYZRGBA_filtered);
 	return cloudXYZRGBA_filtered;
 }
@@ -493,30 +495,38 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::getCloudPlaneConcaveHull(pcl::Po
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize)
 {
 	getCloudPlane(cloudSource);
+	//Create a KdTree
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
 	tree->setInputCloud(cloudSource);
 
 	std::vector<pcl::PointIndices> cluster_indices;
+	//Create a cluster extraction
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+	//Set the cluster tolerance. If the tolerance is too small, one object can be divided into several smaller parts. 
+	//If it is too large, several objects can be considered as once.
 	ec.setClusterTolerance(tolerance);
+	//Set the min size of the cluster
 	ec.setMinClusterSize(minClusterSize);
+	//Set the max size of the cluster
 	ec.setMaxClusterSize(maxClusterSize);
-
+	//Set search method
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloudSource);
+	//Extract the point cloud
 	ec.extract(cluster_indices);
 	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>cloud_clusters;
-	int j=0;
+	
 	for(std::vector<pcl::PointIndices>::const_iterator it=cluster_indices.begin();it!=cluster_indices.end();++it)
 	{
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+		//Get points of the cluster
 		for(std::vector<int>::const_iterator pit=it->indices.begin();pit!=it->indices.end();pit++)
 			cloud_cluster->points.push_back(cloudSource->points[*pit]);
 		cloud_cluster->width=cloud_cluster->points.size();
 		cloud_cluster->height=1;
 		cloud_cluster->is_dense=true;
+		//Add clusters into cloud_clusters
 		cloud_clusters.push_back(cloud_cluster);
-		j++;
 	}
 
 	return cloud_clusters;
@@ -525,32 +535,39 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::euclideanClusterExt
 std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanClusterExtract(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,double tolerance,int minClusterSize,int maxClusterSize)
 {
 	getCloudPlane(cloudSource);
+	//Create a KdTree
 	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
 	tree->setInputCloud(cloudSource);
 
 	std::vector<pcl::PointIndices> cluster_indices;
+	//Create a cluster extraction
 	pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
+	//Set the cluster tolerance. If the tolerance is too small, one object can be divided into several smaller parts. 
+	//If it is too large, several objects can be considered as once.
 	ec.setClusterTolerance(tolerance);
+	//Set the min size of the cluster
 	ec.setMinClusterSize(minClusterSize);
+	//Set the max size of the cluster
 	ec.setMaxClusterSize(maxClusterSize);
-	//ec.setClusterTolerance(30);
-	//ec.setMinClusterSize(500);
-	//ec.setMaxClusterSize(25000);
+	//Set search method
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloudSource);
+	//Extract the point cloud
 	ec.extract(cluster_indices);
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>cloud_clusters;
-	int j=0;
+	
 	for(std::vector<pcl::PointIndices>::const_iterator it=cluster_indices.begin();it!=cluster_indices.end();++it)
 	{
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		//Get points of the cluster
 		for(std::vector<int>::const_iterator pit=it->indices.begin();pit!=it->indices.end();pit++)
 			cloud_cluster->points.push_back(cloudSource->points[*pit]);
 		cloud_cluster->width=cloud_cluster->points.size();
 		cloud_cluster->height=1;
 		cloud_cluster->is_dense=true;
+		//Add clusters into cloud_clusters
 		cloud_clusters.push_back(cloud_cluster);
-		j++;
+		
 	}
 
 	return cloud_clusters;
@@ -558,19 +575,23 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> PointCloud::euclideanCluste
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution, pcl::PointXYZ* searchPoint)
 {
+	//Create octree searcher
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//neighbour index
 	std::vector<int> pointIdxVec;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
+	//If there are neighbours in the voxel
 	if (octree.voxelSearch (*searchPoint, pointIdxVec))
 	{
 		std::vector<int>nonNullIndex;
 
+		//Get the index of neighbours
 		for (size_t i = 0; i < pointIdxVec.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxVec[i]].x==0&&cloudSource->points[pointIdxVec[i]].y==0&&cloudSource->points[pointIdxVec[i]].z==0)
@@ -582,11 +603,11 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
-
 	}
 
 	return cloud_neighbours;
@@ -595,19 +616,23 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::
 
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeVoxel(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution, pcl::PointXYZRGBA* searchPoint)
 {
+	//Create octree searcher
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Neighbour index
 	std::vector<int> pointIdxVec;
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
-
+	
+	//If there are neighbours in the voxel
 	if (octree.voxelSearch (*searchPoint, pointIdxVec))
 	{
 		std::vector<int>nonNullIndex;
 
+		//Get the index of neighbours
 		for (size_t i = 0; i < pointIdxVec.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxVec[i]].x==0&&cloudSource->points[pointIdxVec[i]].y==0&&cloudSource->points[pointIdxVec[i]].z==0)
@@ -619,11 +644,11 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeVoxel(p
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
-
 	}
 
 	return cloud_neighbours;
@@ -631,18 +656,23 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeVoxel(p
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZ* searchPoint)
 {
+	//Create octree search
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Neighbours index
 	std::vector<int> pointIdxNKNSearch;
+	//Neighbours distance
 	std::vector<float> pointNKNSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
+	//If there are neigbhours
 	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
 	{
+		//Get the index of neighbours
 		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
 		{
@@ -655,6 +685,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get neighbour points
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -663,20 +694,26 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(
 
 	return cloud_neighbours;
 }
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,int neighbourNum, pcl::PointXYZRGBA* searchPoint)
 {
+	//Create octree search
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Neighbours index
 	std::vector<int> pointIdxNKNSearch;
+	//Neighbours distance
 	std::vector<float> pointNKNSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+	//If there are neigbhours
 	if (octree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
 	{
+		//Get the index of neighbours
 		std::vector<int>nonNullIndex;
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
 		{
@@ -689,6 +726,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get neighbour points
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -699,19 +737,24 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeKNeighb
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeOutsideRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
 {
+	//Create octree search
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Neighbours index
 	std::vector<int> pointIdxRadiusSearch;
+	//Neighbours distance
 	std::vector<float> pointRadiusSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
+	//If there are neigbhours
 	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
 	{
 		std::vector<int>nonNullIndex;
+		//Get index of neighbours without the radius
 		for(int i=0;i<cloudSource->points.size();++i)
 		{
 			if(std::find(pointIdxRadiusSearch.begin(),pointIdxRadiusSearch.end(),i)==pointIdxRadiusSearch.end())
@@ -726,6 +769,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeOutsideRadi
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours without the radius
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -737,19 +781,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeOutsideRadi
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZ* searchPoint)
 {
+	//Create octree search
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Index of neighbours
 	std::vector<int> pointIdxRadiusSearch;
+	//Distance of neighbours
 	std::vector<float> pointRadiusSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
 
+	//If there are neighbours within the radius
 	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
 	{
 		std::vector<int>nonNullIndex;
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
@@ -761,6 +810,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl:
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -769,21 +819,27 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl:
 
 	return cloud_neighbours;
 }
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float resolution,float radius, pcl::PointXYZRGBA* searchPoint)
 {
+	//Create octree search
 	pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGBA> octree (resolution);
 
 	octree.setInputCloud (cloudSource);
 	octree.addPointsFromInputCloud ();
 
+	//Index of neighbours
 	std::vector<int> pointIdxRadiusSearch;
+	//Distance of neighbours
 	std::vector<float> pointRadiusSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+	//If there are neighbours within the radius
 	if (octree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
 	{
 		std::vector<int>nonNullIndex;
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
@@ -795,27 +851,35 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourOctreeRadius(
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
 	}
-
 	return cloud_neighbours;
 }
 
+
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,int neighbourNum, pcl::PointXYZ* searchPoint)
 {
+	//Create kdtree search
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloudSource);
 
+	//Index of neighbours
 	std::vector<int> pointIdxNKNSearch(neighbourNum);
+	//Distance of neighbours
 	std::vector<float> pointNKNSquaredDistance(neighbourNum);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
+
+	//If there are neighbours
 	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
+
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
@@ -827,6 +891,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -836,16 +901,23 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(
 }
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighbour(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,int neighbourNum, pcl::PointXYZRGBA* searchPoint)
 {
+	//Create kdtree search
 	pcl::KdTreeFLANN<pcl::PointXYZRGBA> kdtree;
 	kdtree.setInputCloud(cloudSource);
 
+	//Index of neighbours
 	std::vector<int> pointIdxNKNSearch(neighbourNum);
+	//Distance of neighbours
 	std::vector<float> pointNKNSquaredDistance(neighbourNum);
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+	//If there are neighbours
 	if ( kdtree.nearestKSearch (*searchPoint, neighbourNum, pointIdxNKNSearch, pointNKNSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
+
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxNKNSearch[i]].x==0&&cloudSource->points[pointIdxNKNSearch[i]].y==0&&cloudSource->points[pointIdxNKNSearch[i]].z==0)
@@ -857,6 +929,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighb
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -868,32 +941,22 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeKNeighb
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudSource,float radius, pcl::PointXYZ* searchPoint)
 {
-	
+	//Create kdtree search
 	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	kdtree.setInputCloud(cloudSource);
-	
+
+	//Index of neighbours
 	std::vector<int> pointIdxRadiusSearch;
+	//Distance of neighbours
 	std::vector<float> pointRadiusSquaredDistance;
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZ>);
-	/*if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
-	{
-		for(int i=0;i<pointIdxRadiusSearch.size();++i)
-		{
-			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
-				continue;
-			cloud_neighbours->points.push_back(cloudSource->points[pointIdxRadiusSearch[i]]);
-		}
-	}
-
-	cloud_neighbours->width=cloud_neighbours->points.size();
-	cloud_neighbours->height=1;
-	cloud_neighbours->is_dense=true;
-	cloud_neighbours->resize(cloud_neighbours->width);*/
 	
+	//If there are neighbours within the radius
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
@@ -906,28 +969,33 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl:
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
 		}
-
-		
 	}
 	return cloud_neighbours;
 }
+
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloudSource,float radius, pcl::PointXYZRGBA* searchPoint)
 {
+	//Create kdtree search
 	pcl::KdTreeFLANN<pcl::PointXYZRGBA> kdtree;
 	kdtree.setInputCloud(cloudSource);
 
+	//Index of neighbours
 	std::vector<int> pointIdxRadiusSearch;
+	//Distance of neighbours
 	std::vector<float> pointRadiusSquaredDistance;
 
 	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_neighbours(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
+	//If there are neighbours within the radius
 	if ( kdtree.radiusSearch (*searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0 )
 	{
 		std::vector<int>nonNullIndex;
+		//Get index of neighbours
 		for (size_t i = 0; i < pointIdxRadiusSearch.size (); ++i)
 		{
 			if(cloudSource->points[pointIdxRadiusSearch[i]].x==0&&cloudSource->points[pointIdxRadiusSearch[i]].y==0&&cloudSource->points[pointIdxRadiusSearch[i]].z==0)
@@ -939,6 +1007,7 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 		cloud_neighbours->height=1;
 		cloud_neighbours->resize(nonNullIndex.size());
 
+		//Get points of neighbours
 		for(int i=0;i<nonNullIndex.size();i++)
 		{
 			cloud_neighbours->points[i]=cloudSource->points[nonNullIndex[i]];
@@ -948,9 +1017,6 @@ pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::searchNeighbourKdTreeRadius(
 	return cloud_neighbours;
 }
 
-
-
-//
 
 bool PointCloud::getNearBlobs2( pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr leftHandCloud,pcl::PointCloud<pcl::PointXYZ>::Ptr rightHandCloud)
 {
@@ -1486,9 +1552,25 @@ void PointCloud::NNN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointXYZ* c
 	}//endfor all points in cloud
 }
 
+void PointCloud::computeEigenVector(pcl::PointCloud<pcl::PointXYZ>* pointCloud,Eigen::Vector4f* centroid, Eigen::Matrix3f* eigen_vectors)
+{
+	Eigen::Vector4f direction;
+	Eigen::Vector4f armvector;
+
+	Eigen::Vector3f eigen_values;
+	Eigen::Matrix3f cov;
+
+	pcl::compute3DCentroid(*pointCloud,*centroid);
+	distfromsensor=(*centroid).norm();
+	pcl::computeCovarianceMatrixNormalized(*pointCloud,*centroid,cov);
+
+	pcl::eigen33(cov,*eigen_vectors,eigen_values);
+	
+}
+
 void PointCloud::getEigens(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int hand)
 {
-	pcl::PointCloud<pcl::PointXYZ> cloud=*handCloud;
+	/*pcl::PointCloud<pcl::PointXYZ> cloud=*handCloud;
 	Eigen::Vector4f centroid;
 	Eigen::Vector4f direction;
 	Eigen::Vector4f armvector;
@@ -1501,25 +1583,33 @@ void PointCloud::getEigens(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int han
 	distfromsensor=centroid.norm();
 	pcl::computeCovarianceMatrixNormalized(cloud,centroid,cov);
 
-	pcl::eigen33(cov,eigen_vectors,eigen_values);
+	pcl::eigen33(cov,eigen_vectors,eigen_values);*/
 	
+	pcl::PointCloud<pcl::PointXYZ> handPointCloud=*handCloud;
+	Eigen::Matrix3f eigen_vectors;
+	Eigen::Vector4f direction;
+	Eigen::Vector4f centroid;
+	Eigen::Vector4f armvector;
+
+	computeEigenVector(&handPointCloud,&centroid, &eigen_vectors);
+
 	direction(0)=eigen_vectors (0, 2);
 	direction(1)=eigen_vectors (1, 2);
 	direction(2)=eigen_vectors (2, 2);
 	
-	if(hand==0)
-	{
-		/*	armvector(0)=arm_center[0]->x();
-		armvector(1)=arm->y();
-		armvector(2)=arm->z();*/
-		armvector=arm_center[0];
-	}
-	if(hand==1)
-	{
-		armvector=arm_center[1];
-	}
+	//if(hand==0)
+	//{
+	//	/*	armvector(0)=arm_center[0]->x();
+	//	armvector(1)=arm->y();
+	//	armvector(2)=arm->z();*/
+	//	armvector=arm_center[0];
+	//}
+	//if(hand==1)
+	//{
+	//	armvector=arm_center[1];
+	//}
 
-
+	armvector=arm_center[hand];
 
 	flipvec(armvector,centroid,direction);
 
@@ -1537,44 +1627,47 @@ void PointCloud::flipvec(const Eigen::Vector4f &palm, const Eigen::Vector4f &fce
 void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int resolution,int radius,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr digits,pcl::PointXYZ *center)
 {
 	vector<int> tempinds;
-	 if(hand==0)
-		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
-	 else
-		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+	/*if(hand==0)
+	NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
+	else
+	NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
 
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
-	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
+	//Get neighbours of the arm center in the hand cloud
+	NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
 
-	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
-	 Eigen::Vector4f handCenter;
-	 
-	 //////////method 1
-	 pcl::compute3DCentroid(handPoints,handCenter);
-	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	//Get hand after filtering the arm part
+	pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	getSubCloud(handCloud,tempinds,handWithOutArm,false);
+
+	pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
+	Eigen::Vector4f handCenter;
+
+	//////////method 1
+	pcl::compute3DCentroid(handPoints,handCenter);
+	pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
 	center->x=searchCenter.x;
 	center->y=searchCenter.y;
 	center->z=searchCenter.z;
-	
-	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
-	 digits->points.swap(digitsCloud->points);
+
+	//Get cloud of digits by searching neighbours without radisu by using octree
+	pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
+	digits->points.swap(digitsCloud->points);
 }
 
  void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int nnthresh,double tol,int hand,pcl::PointCloud<pcl::PointXYZ>::Ptr palm,pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
  {
-	
-
 	 vector<int> tempinds;
-	 if(hand==0)
+	/* if(hand==0)
 		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
 	 else
-		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);
+		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
 
+	 //Get neighbours of the arm center in the hand cloud
+	 NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
+
+	 //GET hand point cloud by filtering arm part
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
 	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
-	 /*if(handCloud->points.size()==0)
-	 {
-		 std::cout<<"000000000000000000000"<<std::endl;
-	 }*/
 
 	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
 	 Eigen::Vector4f handCenter;
@@ -1582,6 +1675,7 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 //////////method 1
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 //Find palm cloud and rigits cloud by using octree search
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,30,45,&searchCenter);//30,45
 	  pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,30,45,&searchCenter);//30,45
 
@@ -1598,22 +1692,29 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	  int label;
 	  for(int i=0;i<potentialPoints.points.size();++i)
 	  {
+		  //If the density of neighbours of is larger than 90, pass it
 		  if(inds2[i]==0)
 			 continue;
+		 //Find neighbours of each point in the cloud
 		 sc2.NNN(&potentialPoints.points[i],searchinds,tol,false);
 		 if(searchinds.size()>75)
 		 {
+			 //Put the point into the palm index vector
 			 inds.push_back(i);
 
+			 //If the density of neighbours is larger than 90, don't check all its neighbours
 			 if(searchinds.size()>90)//80//tol=20
 				 label=0;
+			 //Else, its neighbours still can be checked in the loop
 			 else 
 				 label=1;
+			 //Change the label of all its neighbour if the density is larger than the threshold value
 			 for(int j=0;j<searchinds.size();++j)
 				 inds2[searchinds[j]]=label;
 		 }
 	  }
 
+	  //If the index is not changed, the point is considered as part of digits
 	  for(int i=0;i<potentialPoints.points.size();++i)
 	  {
 		  if(inds2[i]==-1)
@@ -1676,12 +1777,14 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 
  void PointCloud::normalFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int hand, int radius,pcl::PointCloud<pcl::PointXYZ>::Ptr digits)
  {
+	 //Create the normal estimation
 	 pcl::NormalEstimation<pcl::PointXYZ,pcl::Normal> ne;
 	 ne.setInputCloud(handCloud);
-
+	 //Create the KdTree
 	 pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
 	 ne.setSearchMethod(tree);
 
+	 //Compute the normal for each point
 	 pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
 	 ne.setRadiusSearch(radius);
 	 ne.compute(*cloud_normals);
@@ -1695,8 +1798,11 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 pointNormal(2)=cloud_normals->at(i).normal_z;
 		 pointNormal(3)=0;
 		 handDirection(3)=0;
+
+		 //Check the dot value between hand direction vector and the point normal
 		 double dotValue=handDirection.dot(pointNormal);
 
+		 //If the dotvalue is larger then 0.7, consider the point as part of the digits
 		 //if(std::abs(dotValue)>0.7)
 		 if(dotValue>0.7)
 			 digitsIndex.push_back(i);
@@ -1712,16 +1818,19 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
 	 else
 		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
+	 //Get neighbours of the arm center
 	 NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
 
+	 //Get the hand cloud by filtering the arm part
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
 	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
 
 	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
 	 Eigen::Vector4f handCenter;
-
+	 //Get the hand center
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 //Get the palm cloud and digits cloud by using octree search
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,5,40,&searchCenter);//30,45
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,5,40,&searchCenter);//30,45
 
@@ -1744,7 +1853,7 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 			 neighbourCloud.points.push_back(potentialPoints.points[searchinds[j]]);
 		 }
 
-		 Eigen::Vector4f direction;
+		/* Eigen::Vector4f direction;
 		 Eigen::Vector3f eigen_values;
 		 Eigen::Matrix3f eigen_vectors;
 		 Eigen::Matrix3f cov;
@@ -1752,6 +1861,16 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 pcl::compute3DCentroid(neighbourCloud,centroid);
 		 pcl::computeCovarianceMatrixNormalized(neighbourCloud,centroid,cov);
 		 pcl::eigen33(cov,eigen_vectors,eigen_values);
+		 direction(0)=eigen_vectors (0, 2);
+		 direction(1)=eigen_vectors (1, 2);
+		 direction(2)=eigen_vectors (2, 2);*/
+
+		 Eigen::Matrix3f eigen_vectors;
+		 Eigen::Vector4f direction;
+		 Eigen::Vector4f centroid;
+
+		 computeEigenVector(&neighbourCloud,&centroid, &eigen_vectors);
+
 		 direction(0)=eigen_vectors (0, 2);
 		 direction(1)=eigen_vectors (1, 2);
 		 direction(2)=eigen_vectors (2, 2);
@@ -1790,22 +1909,27 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 NNN(handCloud,&eigenToPclPoint(arm_center[0]),tempinds,100);
 	 else
 		 NNN(handCloud,&eigenToPclPoint(arm_center[1]),tempinds,100);*/
+	//Get neighbours around the arm center within the radius of 100
 	 NNN(handCloud,&eigenToPclPoint(arm_center[hand]),tempinds,100);
 
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr handWithOutArm(new  pcl::PointCloud<pcl::PointXYZ>);
+	 //Get the hand after filtering the arm
 	 getSubCloud(handCloud,tempinds,handWithOutArm,false);
 
 	 pcl::PointCloud<pcl::PointXYZ> handPoints=*handWithOutArm;
 	 Eigen::Vector4f handCenter;
-
+	 //Calculate the center of the hand
 	 pcl::compute3DCentroid(handPoints,handCenter);
 	 pcl::PointXYZ searchCenter=eigenToPclPoint(handCenter);
+	 //Get palm cloud by searching neighbours of hand center within the radius
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr palmCloud=searchNeighbourOctreeRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
+	 //Get digits cloud by searching neighbours of hand center without the radius
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr digitsCloud=searchNeighbourOctreeOutsideRadius(handWithOutArm,resolution,radius,&searchCenter);//30,45
 
 	 std::vector<int> inds,inds2,inds3;
 	 std::vector<int> searchinds;
 	 pcl::PointCloud<pcl::PointXYZ> potentialPoints=*digitsCloud;
+	 //Split the point cloud into 64 seperated parts
 	 SplitCloud2 sc2(potentialPoints,tol);
 	 inds2.resize(potentialPoints.points.size(),-1);
 
@@ -1822,14 +1946,22 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 			 neighbourCloud.points.push_back(potentialPoints.points[searchinds[j]]);
 		 }
 
-		 Eigen::Vector4f direction;
+		/* Eigen::Vector4f direction;
 		 Eigen::Vector3f eigen_values;
 		 Eigen::Matrix3f eigen_vectors;
 		 Eigen::Matrix3f cov;
 		 Eigen::Vector4f centroid;
 		 pcl::compute3DCentroid(neighbourCloud,centroid);
 		 pcl::computeCovarianceMatrixNormalized(neighbourCloud,centroid,cov);
-		 pcl::eigen33(cov,eigen_vectors,eigen_values);
+		 pcl::eigen33(cov,eigen_vectors,eigen_values);*/
+
+		
+		 Eigen::Matrix3f eigen_vectors;
+		 Eigen::Vector4f direction;
+		 Eigen::Vector4f centroid;
+
+		 computeEigenVector(&neighbourCloud,&centroid, &eigen_vectors);
+
 		 direction(0)=eigen_vectors (0, 2);
 		 direction(1)=eigen_vectors (1, 2);
 		 direction(2)=eigen_vectors (2, 2);
@@ -1840,10 +1972,10 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 {
 			 inds.push_back(i);
 
-			/* if(dotValue<0.5)
-				 label=0;
+			 /* if(dotValue<0.5)
+			 label=0;
 			 else*/
-				 label=1;
+			 label=1;
 			 for(int j=0;j<searchinds.size();++j)
 				 inds2[searchinds[j]]=label;
 		 }
@@ -1863,9 +1995,9 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> PointCloud::segFingers(pcl::PointCloud<pcl::PointXYZ>::Ptr digits,double clustertol,int mincluster)
  {
 	 /*if(digits->points.size()==0)
-		 return NULL;*/
+	 return NULL;*/
 	 std::vector<std::vector<int>> indclusts;
-	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>clusters=euclideanClusterExtract(digits,clustertol,mincluster,1000);
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>clusters=euclideanClusterExtract(digits,clustertol,mincluster,1000);//Maybe the use of maximum value is useful
 	return clusters;
  }
 
@@ -1891,42 +2023,67 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 
  double PointCloud::checkFingerAngle(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
  {
-	 Eigen::Vector4f centroid;
-	 Eigen::Vector4f direction;
-	 Eigen::Vector3f eigen_values;
+	 //Eigen::Vector4f centroid;
+	 //Eigen::Vector4f direction;
+	 //Eigen::Vector3f eigen_values;
+	 //Eigen::Matrix3f eigen_vectors;
+  //   Eigen::Matrix3f cov;
+	 //pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 ////Find center of finger point cloud
+	 //pcl::compute3DCentroid(finger,centroid);
+	 ////Compute the normalized covariance matrix	
+	 //pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 ////Get the eigen vectors and values of the matrix
+	 //pcl::eigen33(cov,eigen_vectors,eigen_values);
+
+	 pcl::PointCloud<pcl::PointXYZ> fingerPointCloud=*fingerCloud;
 	 Eigen::Matrix3f eigen_vectors;
-     Eigen::Matrix3f cov;
-	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
-	 pcl::compute3DCentroid(finger,centroid);
-	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
-	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 Eigen::Vector4f direction;
+	 Eigen::Vector4f centroid;
+
+	 computeEigenVector(&fingerPointCloud,&centroid, &eigen_vectors);
+
 	 direction(0)=eigen_vectors (0, 2);
 	 direction(1)=eigen_vectors (1, 2);
 	 direction(2)=eigen_vectors (2, 2);
+
+	 //Check the direction
 	 flipvec(handPoints[0],centroid,direction);
 	 
-	
+	 //Get the cos value between hand direction and finger direction
 	 double cos=direction.dot(handDirection);
 	 return cos;
 
  }
 
- double PointCloud::checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud,Eigen::Vector3f* fingerDirection)
+ double PointCloud::checkFingerDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud,Eigen::Vector3f* fingerDirection, int hand)
  {
-	 Eigen::Vector4f centroid;
-	 Eigen::Vector4f direction;
-	 Eigen::Vector3f eigen_values;
+	 //Eigen::Vector4f centroid;
+	 //Eigen::Vector4f direction;
+	 //Eigen::Vector3f eigen_values;
+	 //Eigen::Matrix3f eigen_vectors;
+  //   Eigen::Matrix3f cov;
+	 //pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 ////Find center of finger point cloud
+	 //pcl::compute3DCentroid(finger,centroid);
+  //   //Compute the normalized covariance matrix	
+	 //pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 ////Get the eigen vectors and values of the matrix
+	 //pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 pcl::PointCloud<pcl::PointXYZ> fingerPointCloud=*fingerCloud;
 	 Eigen::Matrix3f eigen_vectors;
-     Eigen::Matrix3f cov;
-	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
-	 pcl::compute3DCentroid(finger,centroid);
-	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
-	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 Eigen::Vector4f direction;
+	 Eigen::Vector4f centroid;
+
+	 computeEigenVector(&fingerPointCloud,&centroid, &eigen_vectors);
+
 	 direction(0)=eigen_vectors (0, 2);
 	 direction(1)=eigen_vectors (1, 2);
 	 direction(2)=eigen_vectors (2, 2);
+	 //Check the direction
 	 flipvec(handPoints[0],centroid,direction);
 
+	 //Get the nearest point to the camera
 	 pcl::PointCloud<pcl::PointXYZ>::Ptr neighbour=searchNeighbourKdTreeKNeighbour(fingerCloud,1,&pcl::PointXYZ(0,0,0));
 	 if(neighbour->points.size()==0)
 		 return 0;
@@ -1934,7 +2091,9 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 nearestPoint(0)=neighbour->points[0].x;
 	 nearestPoint(1)=neighbour->points[0].y;
 	 nearestPoint(2)=neighbour->points[0].z;
-	 Eigen::Vector4f distanceVector=nearestPoint-handPoints[0];
+
+	 //Get the distance to the hand center
+	 Eigen::Vector4f distanceVector=nearestPoint-handPoints[hand];
 	 double distance=distanceVector(0)*distanceVector(0)+distanceVector(1)*distanceVector(1)+distanceVector(2)*distanceVector(2);
 	 distance=std::pow(distance,0.5);
 
@@ -1943,29 +2102,42 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 (*fingerDirection)(2)=direction(2);
 
 	 return distance;
-	/* Eigen::Vector4f distanceVector=centroid-handPoints[0];
-	 return distanceVector.norm();*/
+
  }
 
  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr PointCloud::getFingerLine(pcl::PointCloud<pcl::PointXYZ>::Ptr fingerCloud)
  {
 	 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr fingerLine(new pcl::PointCloud<pcl::PointXYZRGBA>);
-	 Eigen::Vector4f centroid;
-	 Eigen::Vector4f direction;
-	 Eigen::Vector3f eigen_values;
+	
+	 //Eigen::Vector4f centroid;
+	 //Eigen::Vector4f direction;
+	 //Eigen::Vector3f eigen_values;
+	 //Eigen::Matrix3f eigen_vectors;
+	 //Eigen::Matrix3f cov;
+	 //pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
+	 ////Find center of finger point cloud
+	 //pcl::compute3DCentroid(finger,centroid);
+	 ////Compute the normalized covariance matrix
+	 //pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
+	 ////Get the eigen vectors and values of the matrix
+	 //pcl::eigen33(cov,eigen_vectors,eigen_values);
+
+	 pcl::PointCloud<pcl::PointXYZ> fingerPointCloud=*fingerCloud;
 	 Eigen::Matrix3f eigen_vectors;
-	 Eigen::Matrix3f cov;
-	 pcl::PointCloud<pcl::PointXYZ> finger=*fingerCloud;
-	 pcl::compute3DCentroid(finger,centroid);
-	 pcl::computeCovarianceMatrixNormalized(finger,centroid,cov);
-	 pcl::eigen33(cov,eigen_vectors,eigen_values);
+	 Eigen::Vector4f direction;
+	 Eigen::Vector4f centroid;
+
+	 computeEigenVector(&fingerPointCloud,&centroid, &eigen_vectors);
+
 	 direction(0)=eigen_vectors (0, 2);
 	 direction(1)=eigen_vectors (1, 2);
 	 direction(2)=eigen_vectors (2, 2);
+
+	 //Check the direction
 	 flipvec(handPoints[0],centroid,direction);
 
-
 	 pcl::PointXYZRGBA fingerCenter;
+	 //Get the center of the finger
 	 fingerCenter.x=centroid(0);
 	 fingerCenter.y=centroid(1);
 	 fingerCenter.z=centroid(2);
@@ -1974,6 +2146,7 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 fingerCenter.b=200;
 	 fingerLine->points.push_back(fingerCenter);
 
+	 //Add points of finger direction
 	 for(int i=0;i<50;++i)
 	 {
 		 pcl::PointXYZRGBA point;
@@ -1989,7 +2162,7 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 return fingerLine;
  }
 
- Eigen::Vector4f PointCloud::getHandCenter()
+ Eigen::Vector4f PointCloud::getHandCenter(int hand)
  {
 	 return handPoints[0];
  }
@@ -1999,9 +2172,10 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 	 return handDirection;
  }
 
+ 
  void PointCloud::setArmCenter(pcl::PointXYZ* armCenter,int hand)
  {
-	 if(hand==PointCloud::LeftHand)
+	/* if(hand==PointCloud::LeftHand)
 	 {
 		 arm_center[hand](0)=(*armCenter).x;
 		 arm_center[hand](1)=(*armCenter).y;
@@ -2012,5 +2186,11 @@ void PointCloud::radiusFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr handCloud,int 
 		 arm_center[hand](0)=(*armCenter).x;
 		 arm_center[hand](1)=(*armCenter).y;
 		 arm_center[hand](2)=(*armCenter).z;
-	 }
+	 }*/
+
+	 
+	 arm_center[hand](0)=(*armCenter).x;
+	 arm_center[hand](1)=(*armCenter).y;
+	 arm_center[hand](2)=(*armCenter).z;
+
  }
